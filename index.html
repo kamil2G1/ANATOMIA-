@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anatomia Funkcjonalna – 100 Pytań i Fiszki</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+    }
+    .perspective {
+      perspective: 1200px;
+    }
+    .preserve-3d {
+      transform-style: preserve-3d;
+      transition: transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1);
+    }
+    .backface-hidden {
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+    .rotate-y-180 {
+      transform: rotateY(180deg);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Górny pasek nawigacji -->
+  <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-30">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div>
+        <h1 class="text-xl font-extrabold tracking-tight flex items-center gap-2">
+          <span class="bg-indigo-500 text-white px-2.5 py-0.5 rounded-lg text-sm font-bold">100 PYTAŃ</span>
+          Anatomia Funkcjonalna i Postawa Ciała
+        </h1>
+        <p class="text-xs text-slate-400 mt-0.5">Kompletna baza z prezentacji • Tryb Quizu z tasowaniem oraz Fiszki</p>
+      </div>
+
+      <!-- Przełącznik trybów -->
+      <div class="flex bg-slate-800 p-1 rounded-xl self-start sm:self-auto">
+        <button id="tab-quiz" onclick="switchMode('quiz')" class="px-4 py-2 rounded-lg text-sm font-semibold transition bg-indigo-600 text-white shadow">
+          📝 Test (100 pytań)
+        </button>
+        <button id="tab-flashcards" onclick="switchMode('flashcards')" class="px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-300 hover:text-white">
+          🗂️ Fiszki
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Pasek filtrów i tasowania -->
+  <div class="bg-white border-b border-slate-200 shadow-sm">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex flex-wrap items-center gap-2">
+        <label for="category-select" class="text-xs font-bold uppercase tracking-wider text-slate-500">Dział:</label>
+        <select id="category-select" onchange="applyFilter()" class="bg-slate-100 border border-slate-300 text-slate-800 text-sm rounded-lg px-3 py-1.5 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="ALL">Wszystkie działy (100 pytań)</option>
+          <option value="Szkielet osiowy">1. Szkielet osiowy (Kręgosłup, Klatka, Czaszka)</option>
+          <option value="Stawy i ruch">2. Stawy, połączenia kości, osie i płaszczyzny</option>
+          <option value="Kończyna górna">3. Obręcz barkowa i kończyna górna</option>
+          <option value="Miednica i kończyna dolna">4. Miednica i kończyna dolna</option>
+          <option value="Postawa i wady">5. Postawa ciała, punkty kostne i wady</option>
+        </select>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button onclick="shuffleDeck()" class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-semibold text-sm px-4 py-1.5 rounded-lg shadow-sm transition cursor-pointer">
+          🔀 Wymieszaj losowo
+        </button>
+        <button onclick="resetProgress()" class="inline-flex items-center gap-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold text-sm px-3 py-1.5 rounded-lg transition cursor-pointer" title="Wyzeruj wyniki">
+          ↺ Resetuj
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Główny kontener -->
+  <main class="flex-1 max-w-5xl w-full mx-auto px-4 py-6">
+
+    <!-- ==================== TRYB QUIZU ==================== -->
+    <section id="quiz-view" class="space-y-5">
+      <!-- Pasek postępu i statystyk -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex-1">
+          <div class="flex justify-between text-xs font-bold text-slate-600 mb-1.5">
+            <span id="quiz-progress-label">Pytanie 1 z 100</span>
+            <span id="quiz-percent-label">Postęp: 0%</span>
+          </div>
+          <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+            <div id="quiz-progress-bar" class="bg-indigo-600 h-full transition-all duration-300" style="width: 1%"></div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4 text-sm font-bold shrink-0">
+          <div class="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-xl border border-emerald-200">
+            ✅ Dobrze: <span id="score-correct">0</span>
+          </div>
+          <div class="bg-rose-50 text-rose-700 px-3 py-1.5 rounded-xl border border-rose-200">
+            ❌ Błędy: <span id="score-wrong">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Karta pytania -->
+      <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
+        <div class="bg-slate-50 px-6 py-3 border-b border-slate-200 flex items-center justify-between">
+          <span id="q-category-badge" class="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-indigo-100 text-indigo-800">
+            Dział
+          </span>
+          <span id="q-number-badge" class="text-xs font-semibold text-slate-500">
+            ID #1
+          </span>
+        </div>
+
+        <div class="p-6 sm:p-8">
+          <h2 id="q-text" class="text-lg sm:text-xl font-bold text-slate-900 leading-snug mb-6">
+            Treść pytania...
+          </h2>
+
+          <!-- Opcje odpowiedzi -->
+          <div id="q-options" class="space-y-3">
+            <!-- Wypełniane dynamicznie przez JS -->
+          </div>
+
+          <!-- Wyjaśnienie po odpowiedzi -->
+          <div id="q-rationale-box" class="hidden mt-6 p-4 rounded-xl border text-sm leading-relaxed">
+            <p id="q-rationale-title" class="font-bold mb-1"></p>
+            <p id="q-rationale-text"></p>
+          </div>
+        </div>
+
+        <!-- Nawigacja dolna pytania -->
+        <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
+          <button id="btn-prev" onclick="prevQuestion()" class="px-4 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 font-semibold text-sm hover:bg-slate-100 disabled:opacity-40 transition">
+            ← Poprzednie
+          </button>
+
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-500 hidden sm:inline">Skocz do nr:</span>
+            <input id="jump-input" type="number" min="1" max="100" placeholder="Nr" class="w-16 px-2.5 py-1.5 text-sm border border-slate-300 rounded-lg text-center font-semibold" onchange="jumpToQuestion(this.value)" />
+          </div>
+
+          <button id="btn-next" onclick="nextQuestion()" class="px-5 py-2 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 shadow-sm transition">
+            Następne →
+          </button>
+        </div>
+      </div>
+
+      <!-- Podgląd siatki pytań (zwijany) -->
+      <details class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+        <summary class="text-sm font-bold text-slate-700 cursor-pointer select-none">
+          📊 Pokaż mapę wszystkich pytań w bieżącej talii (kliknij numer, aby przejść)
+        </summary>
+        <div id="question-grid" class="grid grid-cols-10 sm:grid-cols-20 gap-1.5 mt-4">
+          <!-- Kafelki numerów -->
+        </div>
+      </details>
+    </section>
+
+    <!-- ==================== TRYB FISZEK ==================== -->
+    <section id="flashcards-view" class="hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div>
+          <span id="fc-counter" class="text-sm font-extrabold text-indigo-600">Fiszka 1 z 100</span>
+          <p class="text-xs text-slate-500">Kliknij kartę (lub naciśnij Spację), aby obrócić fiszkę</p>
+        </div>
+        <div class="flex items-center gap-3 text-xs font-bold">
+          <span class="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg border border-emerald-200">
+            Opanowane: <span id="fc-known-count">0</span>
+          </span>
+          <label class="inline-flex items-center gap-1.5 cursor-pointer text-slate-700 bg-slate-100 px-3 py-1.5 rounded-lg">
+            <input type="checkbox" id="fc-only-unknown" onchange="toggleUnknownFilter()" class="rounded text-indigo-600" />
+            Tylko nieopanowane
+          </label>
+        </div>
+      </div>
+
+      <!-- Karta 3D -->
+      <div class="perspective w-full max-w-2xl mx-auto">
+        <div id="flashcard-inner" onclick="flipCard()" class="preserve-3d relative w-full min-h-[320px] sm:min-h-[360px] cursor-pointer">
+          
+          <!-- Przód fiszki -->
+          <div class="backface-hidden absolute inset-0 bg-white rounded-3xl shadow-lg border-2 border-slate-200 p-6 sm:p-10 flex flex-col justify-between">
+            <div class="flex items-center justify-between">
+              <span id="fc-front-cat" class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-indigo-100 text-indigo-800">
+                Dział
+              </span>
+              <span id="fc-status-badge" class="text-xs font-semibold text-slate-400">
+                Pytanie / Pojęcie
+              </span>
+            </div>
+
+            <div class="my-auto py-6 text-center">
+              <p id="fc-front-text" class="text-xl sm:text-2xl font-bold text-slate-900 leading-snug">
+                Treść fiszki...
+              </p>
+            </div>
+
+            <div class="text-center text-xs font-semibold text-indigo-500">
+              👆 Kliknij, aby zobaczyć odpowiedź
+            </div>
+          </div>
+
+          <!-- Tył fiszki -->
+          <div class="backface-hidden rotate-y-180 absolute inset-0 bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-3xl shadow-xl p-6 sm:p-10 flex flex-col justify-between">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-indigo-500/30 text-indigo-200">
+                Odpowiedź
+              </span>
+              <span id="fc-back-id" class="text-xs text-slate-400">#1</span>
+            </div>
+
+            <div class="my-auto py-4 text-center space-y-4">
+              <p id="fc-back-answer" class="text-xl sm:text-2xl font-extrabold text-emerald-300 leading-snug">
+                Poprawna odpowiedź
+              </p>
+              <p id="fc-back-rationale" class="text-sm text-slate-300 leading-relaxed max-w-lg mx-auto border-t border-slate-700 pt-3">
+                Wyjaśnienie...
+              </p>
+            </div>
+
+            <div class="text-center text-xs text-slate-400">
+              👆 Kliknij ponownie, aby wrócić do pytania
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Przyciski sterowania fiszką -->
+      <div class="max-w-2xl mx-auto flex flex-wrap items-center justify-between gap-3">
+        <button onclick="prevCard()" class="px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-700 font-semibold text-sm hover:bg-slate-100 transition">
+          ← Poprzednia
+        </button>
+
+        <div class="flex items-center gap-2">
+          <button onclick="markCardKnown(false)" class="px-4 py-2.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold text-sm transition">
+            🔄 Do powtórki
+          </button>
+          <button onclick="markCardKnown(true)" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow transition">
+            ✅ Umiem to!
+          </button>
+        </div>
+
+        <button onclick="nextCard()" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm shadow transition">
+          Następna →
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // BAZA 100 PYTAŃ Z ANATOMII FUNKCJONALNEJ I POSTAWY CIAŁA
+    const ALL_QUESTIONS = [
+      // === DZIAŁ 1: SZKIELET OSIOWY (1-25) ===
+      {
+        id: 1, cat: "Szkielet osiowy",
+        q: "Ile kręgów składa się na odcinek szyjny kręgosłupa człowieka?",
+        options: ["7 kręgów", "5 kręgów", "12 kręgów", "8 kręgów"],
+        correct: 0,
+        rationale: "Odcinek szyjny składa się zawsze z 7 kręgów (C1–C7). Warto pamiętać, że nerwów rdzeniowych szyjnych jest 8 (C1–C8), ponieważ C8 wychodzi między C7 a Th1."
+      },
+      {
+        id: 2, cat: "Szkielet osiowy",
+        q: "Czym w budowie różni się pierwszy kręg szyjny (kręg szczytowy – atlas, C1) od pozostałych kręgów?",
+        options: ["Nie posiada trzonu ani wyrostka kolczystego", "Posiada najdłuższy wyrostek kolczysty", "Jest zrośnięty z kością potyliczną", "Posiada ząb skierowany ku górze"],
+        correct: 0,
+        rationale: "Atlas (C1) ma formę pierścienia złożonego z łuku przedniego, łuku tylnego i części bocznych; miejsce jego trzonu zajmuje ząb kręgu obrotowego (C2)."
+      },
+      {
+        id: 3, cat: "Szkielet osiowy",
+        q: "Który element kostny kręgu obrotowego (axis, C2) stanowi oś obrotu dla głowy i kręgu szczytowego?",
+        options: ["Ząb kręgu obrotowego (dens axis)", "Wyrostek haczykowaty", "Guzek przedni", "Wyrostek żebrowy"],
+        correct: 0,
+        rationale: "Ząb kręgu obrotowego wchodzi w pierścień kręgu C1 i jest stabilizowany przez więzadło poprzeczne kręgu szczytowego, umożliwiając ruchy obrotowe głowy."
+      },
+      {
+        id: 4, cat: "Szkielet osiowy",
+        q: "Dlaczego siódmy kręg szyjny (C7) nazywany jest kręgiem wystającym (vertebra prominens)?",
+        options: ["Posiada długi, nierozdwojony wyrostek kolczysty wyczuwalny pod skórą", "Jako jedyny posiada otwory w wyrostkach poprzecznych", "Nie posiada łuku tylnego", "Łączy się bezpośrednio z pierwszym żebrem"],
+        correct: 0,
+        rationale: "Wyrostek kolczysty C7 jest długi, nie jest rozdwojony na końcu i stanowi ważny punkt orientacyjny palpacyjny u podstawy karku."
+      },
+      {
+        id: 5, cat: "Szkielet osiowy",
+        q: "Jaka cecha morfologiczna pozwala jednoznacznie rozpoznać kręgi szyjne (C1–C7) na tle innych odcinków?",
+        options: ["Obecność otworów w wyrostkach poprzecznych", "Obecność dołków żebrowych na trzonach", "Czworokątne, masywne wyrostki kolczyste", "Brak otworu kręgowego"],
+        correct: 0,
+        rationale: "Otwory wyrostków poprzecznych (foramina transversaria) występują wyłącznie w kręgach szyjnych i przepuszczają (w C1–C6) tętnicę oraz żyłę kręgową."
+      },
+      {
+        id: 6, cat: "Szkielet osiowy",
+        q: "Jaką cechę charakterystyczną posiadają kręgi piersiowe (Th1–Th12)?",
+        options: ["Dołki żebrowe na trzonach i wyrostkach poprzecznych", "Rozdwojone wyrostki kolczyste", "Największe i najmasywniejsze trzony", "Otwory w wyrostkach poprzecznych"],
+        correct: 0,
+        rationale: "Kręgi piersiowe łączą się z żebrami poprzez dołki żebrowe na bocznych powierzchniach trzonów (dla głów żeber) oraz na wyrostkach poprzecznych (dla guzków żeber)."
+      },
+      {
+        id: 7, cat: "Szkielet osiowy",
+        q: "Dlaczego kręgi lędźwiowe (L1–L5) mają największe i najmasywniejsze trzony?",
+        options: ["Przenoszą największy ciężar górnej części ciała", "Chronią splot ramienny", "Umożliwiają największy zakres rotacji tułowia", "Łączą się z żebrami wolnymi"],
+        correct: 0,
+        rationale: "Obciążenia osiowe rosną ku dołowi kręgosłupa, dlatego 5 kręgów lędźwiowych wymaga szerokich, wysokich i bardzo wytrzymałych trzonów."
+      },
+      {
+        id: 8, cat: "Szkielet osiowy",
+        q: "Do której grupy kości ze względu na kształt zaliczamy wszystkie kręgi kręgosłupa?",
+        options: ["Do kości różnokształtnych (nieregularnych)", "Do kości krótkich", "Do kości płaskich", "Do kości pneumatycznych"],
+        correct: 0,
+        rationale: "Kręgi mają skomplikowaną budowę z trzonem, łukiem i licznymi wyrostkami, dlatego klasyfikuje się je jako kości różnokształtne (nieregularne)."
+      },
+      {
+        id: 9, cat: "Szkielet osiowy",
+        q: "Z ilu zrośniętych kręgów powstaje kość krzyżowa (os sacrum) u osoby dorosłej?",
+        options: ["Z 5 kręgów krzyżowych", "Z 4 kręgów krzyżowych", "Z 7 kręgów krzyżowych", "Z 3 kręgów krzyżowych"],
+        correct: 0,
+        rationale: "Kość krzyżowa to trójkątna kość powstała ze zrośnięcia (synostozy) 5 kręgów krzyżowych (S1–S5), zamykająca od tyłu obręcz miedniczną."
+      },
+      {
+        id: 10, cat: "Szkielet osiowy",
+        q: "Ile wszystkich kręgów (wliczając odcinki zrośnięte) buduje kręgosłup człowieka?",
+        options: ["33–34 kręgi", "24 kręgi", "26 kręgów", "30 kręgów"],
+        correct: 0,
+        rationale: "Kręgosłup składa się z 24 kręgów prawdziwych (7 C, 12 Th, 5 L) oraz 9–10 kręgów rzekomych zrośniętych w kość krzyżową (5) i guziczną (4–5)."
+      },
+      {
+        id: 11, cat: "Szkielet osiowy",
+        q: "Które krzywizny fizjologiczne kręgosłupa są wygięte łukiem ku przodowi?",
+        options: ["Lordoza szyjna i lordoza lędźwiowa", "Kifoza piersiowa i kifoza krzyżowa", "Lordoza piersiowa i kifoza szyjna", "Kifoza lędźwiowa i lordoza krzyżowa"],
+        correct: 0,
+        rationale: "Lordozy (szyjna i lędźwiowa) są wypukłe ku przodowi, natomiast kifozy (piersiowa i krzyżowa) są wypukłe ku tyłowi."
+      },
+      {
+        id: 12, cat: "Szkielet osiowy",
+        q: "Jaką główną funkcję biomechaniczną pełnią fizjologiczne krzywizny kręgosłupa (kształt podwójnej litery S)?",
+        options: ["Amortyzują wstrząsy i 10-krotnie zwiększają wytrzymałość na ściskanie", "Całkowicie blokują ruchy zgięcia bocznego", "Zmniejszają masę kręgów piersiowych", "Zapobiegają zrastaniu się kości krzyżowej"],
+        correct: 0,
+        rationale: "Zgodnie ze wzorem inżynieryjnym R = N² + 1 (gdzie N = 3 ruchome krzywizny), kręgosłup z trzema krzywiznami jest 10 razy odporniejszy na obciążenia osiowe niż prosta kolumna."
+      },
+      {
+        id: 13, cat: "Szkielet osiowy",
+        q: "Z jakich dwóch głównych struktur składa się krążek międzykręgowy (dysk)?",
+        options: ["Z pierścienia włóknistego i jądra miażdżystego", "Z chrząstki szklistej i okostnej", "Z torebki stawowej i łąkotki", "Z więzadła żółtego i blaszki granicznej"],
+        correct: 0,
+        rationale: "Zewnętrzny pierścień włóknisty (annulus fibrosus) stabilizuje i utrzymuje centralnie położone, silnie uwodnione jądro miażdżyste (nucleus pulposus)."
+      },
+      {
+        id: 14, cat: "Szkielet osiowy",
+        q: "Dlaczego w ciągu dnia nasz wzrost nieznacznie maleje (o ok. 1–2 cm), a po nocy wraca do normy?",
+        options: ["Jądro miażdżyste traci wodę pod wpływem ucisku w pionie i odzyskuje ją w odciążeniu", "Więzadła żółte ulegają skurczowi pod wpływem zmęczenia", "Kręgi piersiowe zachodzą na siebie dachówkowato", "Chrząstki żebrowe tracą elastyczność wieczorem"],
+        correct: 0,
+        rationale: "Krążki międzykręgowe nie mają naczyń krwionośnych i odżywiają się na zasadzie dyfuzji/osmozy – w dzień woda jest wyciskana przez grawitację, a w nocy wchłaniana z powrotem."
+      },
+      {
+        id: 15, cat: "Szkielet osiowy",
+        q: "W jakiej kolejności (od góry ku dołowi) ułożone są trzy części budujące mostek (sternum)?",
+        options: ["Rękojeść, trzon, wyrostek mieczykowaty", "Wyrostek mieczykowaty, trzon, rękojeść", "Trzon, rękojeść, łuk mostkowy", "Głowa, szyjka, trzon mostka"],
+        correct: 0,
+        rationale: "Od góry znajduje się szeroka rękojeść mostka, poniżej najdłuższy trzon mostka, a na samym dole najmniejszy wyrostek mieczykowaty."
+      },
+      {
+        id: 16, cat: "Szkielet osiowy",
+        q: "Jaki punkt orientacyjny wyznacza kąt mostka (angulus sterni) na granicy rękojeści i trzonu mostka?",
+        options: ["Miejsce przyczepu chrząstki II żebra", "Miejsce przyczepu obojczyka", "Poziom przepony", "Miejsce przyczepu VII żebra"],
+        correct: 0,
+        rationale: "Kąt mostka jest łatwo wyczuwalnym poprzecznym uwypukleniem, na wysokości którego do mostka dochodzi druga para żeber (ułatwia liczenie żeber w badaniu)."
+      },
+      {
+        id: 17, cat: "Szkielet osiowy",
+        q: "Które pary żeber zaliczamy do żeber prawdziwych (costae verae)?",
+        options: ["Pary od I do VII", "Pary od VIII do X", "Pary XI i XII", "Wszystkie 12 par żeber"],
+        correct: 0,
+        rationale: "Żebra prawdziwe (I–VII) łączą się za pomocą własnych chrząstek żebrowych bezpośrednio z mostkiem."
+      },
+      {
+        id: 18, cat: "Szkielet osiowy",
+        q: "Czym charakteryzują się żebra rzekome (pary VIII–X)?",
+        options: ["Ich chrząstki łączą się z chrząstką żebra wyższego, tworząc łuk żebrowy", "Nie posiadają części kostnej", "Kończą się swobodnie w ścianie brzucha", "Łączą się bezpośrednio z rękojeścią mostka"],
+        correct: 0,
+        rationale: "Żebra VIII, IX i X nie dochodzą bezpośrednio do mostka, lecz łączą się kolejno z chrząstką żebra leżącego wyżej, formując łuk żebrowy."
+      },
+      {
+        id: 19, cat: "Szkielet osiowy",
+        q: "Które żebra nazywamy żebrami wolnymi (costae fluctuantes)?",
+        options: ["Pary XI i XII", "Pary I i II", "Pary IX i X", "Pary VIII, IX i X"],
+        correct: 0,
+        rationale: "Żebra XI i XII nie łączą się ani z mostkiem, ani z łukiem żebrowym – ich przednie końce leżą swobodnie w mięśniach ściany brzucha."
+      },
+      {
+        id: 20, cat: "Szkielet osiowy",
+        q: "Która kość tworzy tylną oraz dolną ścianę mózgoczaszki i posiada otwór wielki (foramen magnum)?",
+        options: ["Kość potyliczna", "Kość ciemieniowa", "Kość klinowa", "Kość skroniowa"],
+        correct: 0,
+        rationale: "Kość potyliczna (os occipitale) posiada otwór wielki łączący jamę czaszki z kanałem kręgowym oraz kłykcie potyliczne łączące czaszkę z kręgiem C1."
+      },
+      {
+        id: 21, cat: "Szkielet osiowy",
+        q: "Która kość czaszki jest jedyną kością połączoną stawowo (ruchomo) z resztą czaszki?",
+        options: ["Żuchwa", "Szczęka", "Kość jarzmowa", "Kość nosowa"],
+        correct: 0,
+        rationale: "Żuchwa (mandibula) łączy się z kością skroniową poprzez parzysty staw skroniowo-żuchwowy; pozostałe kości czaszki połączone są nieruchomymi szwami lub chrząstkozrostami."
+      },
+      {
+        id: 22, cat: "Szkielet osiowy",
+        q: "Jaka unikalna cecha wyróżnia kość gnykową (os hyoideum) na tle całego szkieletu człowieka?",
+        options: ["Nie łączy się stawowo z żadną inną kością", "Jest największą kością pneumatyczną", "Zbudowana jest wyłącznie z chrząstki włóknistej", "Tworzy sklepienie jamy nosowej"],
+        correct: 0,
+        rationale: "Kość gnykowa leży w szyi poniżej żuchwy i jest zawieszona wyłącznie na mięśniach i więzadłach (m.in. rylcowo-gnykowym)."
+      },
+      {
+        id: 23, cat: "Szkielet osiowy",
+        q: "Przez jakie otwory z kanału kręgowego wychodzą nerwy rdzeniowe?",
+        options: ["Przez otwory międzykręgowe", "Przez otwory wyrostków poprzecznych", "Przez otwór wielki", "Przez kanał krzyżowy wyłącznie"],
+        correct: 0,
+        rationale: "Otwory międzykręgowe (foramina intervertebralia) ograniczone są wcięciami kręgowymi sąsiednich kręgów oraz krążkiem międzykręgowym."
+      },
+      {
+        id: 24, cat: "Szkielet osiowy",
+        q: "Jaką funkcję pełni okostna (periosteum) pokrywająca kość z zewnątrz?",
+        options: ["Odżywia kość, umożliwia jej wzrost na grubość oraz regenerację po złamaniach", "Wytwarza maź stawową w stawach kulistych", "Zastępuje chrząstkę stawową na powierzchniach stawowych", "Wypełnia jamę szpikową trzonu kości długiej"],
+        correct: 0,
+        rationale: "Okostna jest silnie unaczynioną i unerwioną błoną łącznotkankową; nie pokrywa jedynie powierzchni stawowych (tam znajduje się chrząstka szklista)."
+      },
+      {
+        id: 25, cat: "Szkielet osiowy",
+        q: "Które struktury przechodzą przez kanał kręgowy?",
+        options: ["Rdzeń kręgowy wraz z oponami i naczyniami", "Tętnice kręgowe", "Pień współczulny", "Nerwy błędne"],
+        correct: 0,
+        rationale: "Kanał kręgowy powstaje z nałożenia na siebie otworów kręgowych kolejnych kręgów i chroni rdzeń kręgowy."
+      },
+
+      // === DZIAŁ 2: STAWY, POŁĄCZENIA KOŚCI, OSIE I PŁASZCZYZNY (26-45) ===
+      {
+        id: 26, cat: "Stawy i ruch",
+        q: "Jak ustawione jest ciało człowieka w tzw. pozycji anatomicznej?",
+        options: ["Stojąca, wzrok w przód, kończyny górne wzdłuż tułowia, dłonie zwrócone do przodu", "Stojąca, dłonie zwrócone do ud, kciuki skierowane do przodu", "Leżąca na plecach z odwiedzionymi kończynami", "Stojąca w lekkim rozkroku z przedramionami w pronacji"],
+        correct: 0,
+        rationale: "W pozycji anatomicznej przedramiona znajdują się w odwróceniu (supinacji) – wnętrza dłoni patrzą do przodu, a kciuki skierowane są na zewnątrz (bocznie)."
+      },
+      {
+        id: 27, cat: "Stawy i ruch",
+        q: "Na jakie dwie części dzieli ciało płaszczyzna strzałkowa (planum sagittale)?",
+        options: ["Na część prawą i lewą", "Na część przednią i tylną", "Na część górną i dolną", "Na część bliższą i dalszą"],
+        correct: 0,
+        rationale: "Płaszczyzna strzałkowa przebiega pionowo od przodu ku tyłowi, dzieląc ciało na stronę prawą i lewą (płaszczyzna pośrodkowa dzieli je na dwie symetryczne połowy)."
+      },
+      {
+        id: 28, cat: "Stawy i ruch",
+        q: "Na jakie części dzieli ciało płaszczyzna czołowa (planum frontale)?",
+        options: ["Na część przednią (brzuszną) i tylną (grzbietową)", "Na część górną i dolną", "Na część prawą i lewą", "Na część przyśrodkową i boczną"],
+        correct: 0,
+        rationale: "Płaszczyzna czołowa biegnie pionowo równolegle do czoła, dzieląc ciało na część przednią i tylną."
+      },
+      {
+        id: 29, cat: "Stawy i ruch",
+        q: "W której płaszczyźnie i wokół której osi zachodzą ruchy zgięcia (flexio) oraz wyprostu (extensio)?",
+        options: ["W płaszczyźnie strzałkowej wokół osi poprzecznej", "W płaszczyźnie czołowej wokół osi strzałkowej", "W płaszczyźnie poprzecznej wokół osi podłużnej", "W płaszczyźnie strzałkowej wokół osi podłużnej"],
+        correct: 0,
+        rationale: "Ruch odbywa się w płaszczyźnie strzałkowej (przód–tył), a oś obrotu przebiega prostopadle do niej, czyli poprzecznie (od strony lewej do prawej)."
+      },
+      {
+        id: 30, cat: "Stawy i ruch",
+        q: "W której płaszczyźnie i wokół której osi zachodzą ruchy odwodzenia (abductio) i przywodzenia (adductio)?",
+        options: ["W płaszczyźnie czołowej wokół osi strzałkowej", "W płaszczyźnie strzałkowej wokół osi poprzecznej", "W płaszczyźnie poprzecznej wokół osi pionowej", "W płaszczyźnie czołowej wokół osi poprzecznej"],
+        correct: 0,
+        rationale: "Odwodzenie i przywodzenie to ruchy na boki w płaszczyźnie czołowej, wykonywane wokół osi strzałkowej (przebiegającej od przodu do tyłu)."
+      },
+      {
+        id: 31, cat: "Stawy i ruch",
+        q: "W której płaszczyźnie i wokół której osi zachodzą ruchy rotacji (obrotu) w stawach?",
+        options: ["W płaszczyźnie poprzecznej wokół osi podłużnej (pionowej)", "W płaszczyźnie czołowej wokół osi strzałkowej", "W płaszczyźnie strzałkowej wokół osi poprzecznej", "W płaszczyźnie poprzecznej wokół osi poprzecznej"],
+        correct: 0,
+        rationale: "Ruchy obrotowe (np. rotacja głowy, tułowia czy kości udowej) zachodzą w płaszczyźnie poziomej (poprzecznej) wokół osi podłużnej biegnącej z góry na dół."
+      },
+      {
+        id: 32, cat: "Stawy i ruch",
+        q: "Co oznaczają w anatomii pojęcia „proksymalny” (bliższy) i „dystalny” (dalszy)?",
+        options: ["Położenie bliżej lub dalej od przyczepu kończyny do tułowia", "Położenie bliżej lub dalej od płaszczyzny pośrodkowej ciała", "Położenie bliżej lub dalej od powierzchni skóry", "Położenie wyżej lub niżej względem podłoża"],
+        correct: 0,
+        rationale: "Określeń proksymalny i dystalny używamy głównie w odniesieniu do kończyn (np. łokieć jest proksymalny względem nadgarstka, ale dystalny względem barku)."
+      },
+      {
+        id: 33, cat: "Stawy i ruch",
+        q: "Jak dzielimy połączenia kości w układzie ruchu?",
+        options: ["Na połączenia ścisłe (więzozrosty, chrząstkozrosty, kościozrosty) i wolne (stawy)", "Wyłącznie na stawy kuliste i zawiasowe", "Na połączenia czynne i bierne", "Na połączenia osiowe i obwodowe"],
+        correct: 0,
+        rationale: "Połączenia ścisłe (ciągłe) nie mają jamy stawowej (łączą się tkanką łączną, chrzęstną lub kostną), natomiast połączenia wolne (stawy maziowe) posiadają jamę stawową."
+      },
+      {
+        id: 34, cat: "Stawy i ruch",
+        q: "Do jakiego rodzaju połączeń kości zaliczamy szwy czaszkowe oraz błonę międzykostną przedramienia?",
+        options: ["Do więzozrostów (syndesmoses)", "Do chrząstkozrostów (synchondroses)", "Do stawów płaskich", "Do kościozrostów (synostoses)"],
+        correct: 0,
+        rationale: "Więzozrosty to połączenia ścisłe za pomocą tkanki łącznej włóknistej – należą tu więzadła, błony międzykostne, szwy czaszki oraz wklinowanie (zęby)."
+      },
+      {
+        id: 35, cat: "Stawy i ruch",
+        q: "Do jakiej kategorii połączeń kości zalicza się spojenie łonowe oraz połączenia krążków międzykręgowych z trzonami?",
+        options: ["Do chrząstkozrostów (synchondroses)", "Do więzozrostów", "Do stawów siodełkowatych", "Do kościozrostów"],
+        correct: 0,
+        rationale: "Chrząstkozrosty łączą kości za pomocą tkanki chrzęstnej (szklistej lub włóknistej, jak w spojeniu łonowym i dyskach międzykręgowych)."
+      },
+      {
+        id: 36, cat: "Stawy i ruch",
+        q: "Jakie trzy obowiązkowe elementy tworzą budowę każdego stawu maziowego (połączenia wolnego)?",
+        options: ["Powierzchnie stawowe, torebka stawowa oraz jama stawowa", "Łąkotki, obrąbek stawowy i trzeszczki", "Więzadła krzyżowe, kaletki i ścięgna", "Okostna, szpik kostny i blaszka graniczna"],
+        correct: 0,
+        rationale: "Każdy staw musi mieć powierzchnie stawowe (pokryte chrząstką szklistą), szczelnie otaczającą je torebkę stawową oraz zamkniętą jamę stawową z mazią."
+      },
+      {
+        id: 37, cat: "Stawy i ruch",
+        q: "Z jakich dwóch warstw składa się torebka stawowa?",
+        options: ["Z zewnętrznej błony włóknistej i wewnętrznej błony maziowej", "Z chrząstki szklistej i chrząstki sprężystej", "Z okostnej i śródkostnej", "Z blaszki ściennej i blaszki trzewnej"],
+        correct: 0,
+        rationale: "Błona włóknista odpowiada za wytrzymałość mechaniczną torebki, a błona maziowa produkuje maź stawową (synovię)."
+      },
+      {
+        id: 38, cat: "Stawy i ruch",
+        q: "Jaką funkcję pełni maź stawowa (synovia) wewnątrz jamy stawowej?",
+        options: ["Zmniejsza tarcie między powierzchniami stawowymi oraz odżywia chrząstkę stawową", "Usztywnia staw i blokuje nadmierną rotację", "Zastępuje więzadła poboczne", "Wytwarza krwinki czerwone"],
+        correct: 0,
+        rationale: "Chrząstka stawowa nie posiada własnych naczyń krwionośnych, dlatego maź stawowa zarówno smaruje staw, jak i dostarcza chrząstce substancji odżywczych."
+      },
+      {
+        id: 39, cat: "Stawy i ruch",
+        q: "Czym różni się więzadło (ligamentum) od ścięgna (tendo)?",
+        options: ["Więzadło łączy kość z kością, a ścięgno przyczepia mięsień do kości", "Więzadło zbudowane jest z tkanki mięśniowej, a ścięgno z chrzęstnej", "Więzadło występuje tylko w kręgosłupie, a ścięgno w kończynach", "Więzadło jest elastyczne jak guma, a ścięgno całkowicie sztywne"],
+        correct: 0,
+        rationale: "Więzadła to pasma tkanki łącznej łączące ze sobą kości i stabilizujące stawy; ścięgna przenoszą siłę skurczu mięśnia na kość."
+      },
+      {
+        id: 40, cat: "Stawy i ruch",
+        q: "Które stawy klasyfikujemy jako stawy jednoosiowe?",
+        options: ["Staw zawiasowy i staw obrotowy", "Staw kulisty i staw panewkowy", "Staw eliptyczny i staw siodełkowaty", "Staw kulisty i staw siodełkowaty"],
+        correct: 0,
+        rationale: "Staw zawiasowy (np. międzypaliczkowe) oraz staw obrotowy (np. szczytowo-obrotowy pośrodkowy, promieniowo-łokciowy bliższy) wykonują ruch tylko wokół 1 osi."
+      },
+      {
+        id: 41, cat: "Stawy i ruch",
+        q: "Ile osi ruchu posiadają stawy kuliste (np. staw ramienny i staw biodrowy)?",
+        options: ["Trzy osie ruchu (stawy wieloosiowe)", "Jedną oś ruchu", "Dwie osie ruchu", "Zero osi ruchu"],
+        correct: 0,
+        rationale: "Stawy kuliste umożliwiają ruchy we wszystkich trzech głównych płaszczyznach (zgięcie/wyprost, odwodzenie/przywodzenie, rotacja) oraz obwodzenie."
+      },
+      {
+        id: 42, cat: "Stawy i ruch",
+        q: "Które z wymienionych struktur zaliczamy do elementów dodatkowych (niestabilnych) niektórych stawów?",
+        options: ["Łąkotki, krążki stawowe, obrąbki stawowe i kaletki maziowe", "Torebka stawowa i chrząstka szklista", "Jama stawowa i maź stawowa", "Trzon kości i okostna"],
+        correct: 0,
+        rationale: "Nie wszystkie stawy je posiadają – występują tam, gdzie trzeba dopasować niespójne powierzchnie (łąkotki w kolanie, krążek w stawie skroniowo-żuchwowym) lub pogłębić panewkę (obrąbki)."
+      },
+      {
+        id: 43, cat: "Stawy i ruch",
+        q: "Jaką funkcję pełnią kaletki maziowe (bursae synoviales) zlokalizowane w okolicy stawów?",
+        options: ["Zmniejszają tarcie między ścięgnami, mięśniami a wystającymi częściami kości", "Łączą ze sobą sąsiednie kręgi", "Zastępują torebkę stawową w stawach płaskich", "Magazynują wapń w kościach długich"],
+        correct: 0,
+        rationale: "Kaletki to małe woreczki wypełnione mazią działające jak poduszki poślizgowe chroniące ścięgna i skórę przed tarciem o kość."
+      },
+      {
+        id: 44, cat: "Stawy i ruch",
+        q: "Na czym polega ruch obwodzenia (circumductio) w stawie?",
+        options: ["Na płynnym połączeniu zgięcia, odwodzenia, wyprostu i przywodzenia (koniec kończyny zatacza okrąg)", "Na obrocie kości wokół własnej osi długiej", "Na ślizgu dwóch płaskich powierzchni względem siebie", "Na jednoczesnym zgięciu i pronacji przedramienia"],
+        correct: 0,
+        rationale: "Obwodzenie wymaga co najmniej dwóch osi ruchu (np. staw ramienny, biodrowy, nadgarstkowy) – kończyna zakreśla w przestrzeni stożek."
+      },
+      {
+        id: 45, cat: "Stawy i ruch",
+        q: "Jaką funkcję pełni chrząstka stawowa szklista pokrywająca końce kości w stawie?",
+        options: ["Wygładza powierzchnie zmniejszając tarcie oraz amortyzuje naciski", "Wytwarza krew w jamie stawowej", "Przyczepia brzuśce mięśniowe do nasady kości", "Wykazuje silne unerwienie bólowe"],
+        correct: 0,
+        rationale: "Chrząstka szklista jest bardzo gładka, sprężysta i nieunerwiona – ból w chorobie zwyrodnieniowej pojawia się dopiero, gdy dojdzie do jej starcia i podrażnienia kości podchrzęstnej."
+      },
+
+      // === DZIAŁ 3: KOŃCZYNA GÓRNA (46-65) ===
+      {
+        id: 46, cat: "Kończyna górna",
+        q: "Które dwie kości tworzą obręcz kończyny górnej (obręcz barkową)?",
+        options: ["Obojczyk i łopatka", "Kość ramienna i łopatka", "Obojczyk i mostek", "Łopatka i pierwsze żebro"],
+        correct: 0,
+        rationale: "Obręcz barkową tworzą obojczyk (z przodu) oraz łopatka (z tyłu); kość ramienna należy już do części wolnej kończyny górnej."
+      },
+      {
+        id: 47, cat: "Kończyna górna",
+        q: "Który staw stanowi jedyne kostne połączenie kończyny górnej ze szkieletem osiowym (tułowiem)?",
+        options: ["Staw mostkowo-obojczykowy", "Staw ramienny", "Staw barkowo-obojczykowy", "Połączenie łopatkowo-żebrowe"],
+        correct: 0,
+        rationale: "Koniec mostkowy obojczyka łączy się z wcięciem obojczykowym rękojeści mostka (z udziałem krążka stawowego) – to jedyny bezpośredni punkt podparcia kostnego kończyny górnej na tułowiu."
+      },
+      {
+        id: 48, cat: "Kończyna górna",
+        q: "Jaką rolę biomechaniczną pełni esowate wygięcie obojczyka w płaszczyźnie poziomej?",
+        options: ["Działa jak sprężyna amortyzująca wstrząsy przenoszone z ręki na tułów", "Uniemożliwia uniesienie ramienia ponad poziom", "Chroni tętnicę szyjną wspólną", "Służy jako przyczep mięśnia trójgłowego ramienia"],
+        correct: 0,
+        rationale: "Podwójne wygięcie obojczyka zwiększa jego elastyczność i rozprasza siły uderzeniowe przy upadku na wyciągniętą rękę."
+      },
+      {
+        id: 49, cat: "Kończyna górna",
+        q: "Która struktura kostna na tylnej powierzchni łopatki oddziela dół nadgrzebieniowy od dołu podgrzebieniowego?",
+        options: ["Grzebień łopatki (spina scapulae)", "Wyrostek kruczy", "Wydrążenie stawowe", "Kąt dolny łopatki"],
+        correct: 0,
+        rationale: "Grzebień łopatki biegnie skośnie ku górze i bokowi, przechodząc w wyrostek barkowy (acromion) i dzieląc powierzchnię tylną na dół nadgrzebieniowy i podgrzebieniowy."
+      },
+      {
+        id: 50, cat: "Kończyna górna",
+        q: "Dlaczego staw ramienny ma największy zakres ruchomości w organizmie, ale jest najbardziej podatny na zwichnięcia?",
+        options: ["Głowa kości ramiennej jest 3–4 razy większa od płytkiego wydrążenia stawowego łopatki", "Staw ten nie posiada torebki stawowej", "Łopatka jest na stałe zrośnięta z żebrami", "Więzadła całkowicie pokrywają staw od dołu"],
+        correct: 0,
+        rationale: "Duża dysproporcja powierzchni (mała panewka, duża głowa) daje ogromną swobodę ruchu kosztem stabilności kostnej (częściowo kompensuje ją obrąbek stawowy i stożek rotatorów)."
+      },
+      {
+        id: 51, cat: "Kończyna górna",
+        q: "Na czym polega tzw. rytm łopatkowo-ramienny podczas pełnego odwiedzenia ramienia do 180°?",
+        options: ["Na każde 2° ruchu w stawie ramiennym przypada około 1° rotacji górnej łopatki", "Łopatka pozostaje całkowicie nieruchoma przez cały zakres ruchu", "Najpierw łopatka obraca się o 90°, a potem rusza kość ramienna", "Obojczyk wykonuje zgięcie w dół o 60°"],
+        correct: 0,
+        rationale: "Pełne uniesienie ramienia (180°) składa się z ok. 120° ruchu w stawie ramiennym oraz 60° rotacji górnej łopatki na klatce piersiowej (proporcja 2:1)."
+      },
+      {
+        id: 52, cat: "Kończyna górna",
+        q: "Jakie trzy stawy tworzą wspólną torebkę stawową w obrębie stawu łokciowego (articulatio cubiti)?",
+        options: ["Ramienno-łokciowy, ramienno-promieniowy oraz promieniowo-łokciowy bliższy", "Ramienno-łokciowy, promieniowo-nadgarstkowy i barkowo-obojczykowy", "Ramienno-promieniowy, promieniowo-łokciowy dalszy i śródręczny", "Łokciowo-nadgarstkowy, zawiasowy i siodełkowaty"],
+        correct: 0,
+        rationale: "Staw łokciowy jest stawem złożonym: ramienno-łokciowy (zawiasowy) i ramienno-promieniowy umożliwiają zgięcie/wyprost, a promieniowo-łokciowy bliższy – rotację."
+      },
+      {
+        id: 53, cat: "Kończyna górna",
+        q: "Który element kostny kości łokciowej wchodzi w dół wyrostka łokciowego kości ramiennej podczas pełnego wyprostu?",
+        options: ["Wyrostek łokciowy (olecranon)", "Wyrostek dziobiasty", "Głowa kości łokciowej", "Wyrostek rylcowaty"],
+        correct: 0,
+        rationale: "Wyrostek łokciowy tworzy wyniosłość łokcia i blokuje nadmierny wyprost w stawie łokciowym, opierając się w dole wyrostka łokciowego kości ramiennej."
+      },
+      {
+        id: 54, cat: "Kończyna górna",
+        q: "Która kość przedramienia w pozycji anatomicznej leży po stronie bocznej (od strony kciuka)?",
+        options: ["Kość promieniowa (radius)", "Kość łokciowa (ulna)", "Kość grochowata", "Kość łódeczkowata"],
+        correct: 0,
+        rationale: "Kość promieniowa leży bocznie (po stronie kciuka) i rozszerza się ku dołowi, natomiast kość łokciowa leży przyśrodkowo (po stronie małego palca) i jest masywniejsza u góry."
+      },
+      {
+        id: 55, cat: "Kończyna górna",
+        q: "Co dzieje się z kośćmi przedramienia podczas ruchu nawracania (pronacji) z pozycji anatomicznej?",
+        options: ["Kość promieniowa krzyżuje od przodu kość łokciową", "Obie kości ustawiają się równolegle do siebie", "Kość łokciowa obraca się wokół kości promieniowej", "Kość promieniowa przesuwa się ku górze do dołu łokciowego"],
+        correct: 0,
+        rationale: "W supinacji kości przedramienia leżą równolegle, natomiast podczas pronacji koniec dalszy kości promieniowej owija się od przodu wokół kości łokciowej, krzyżując ją."
+      },
+      {
+        id: 56, cat: "Kończyna górna",
+        q: "Jaką funkcję pełni więzadło pierścieniowate kości promieniowej?",
+        options: ["Obejmuje głowę kości promieniowej i dociska ją do kości łokciowej podczas rotacji", "Łączy wyrostek rylcowaty z kością łódeczkowatą", "Ogranicza zgięcie w stawie ramiennym", "Zamyka od dołu kanał nadgarstka"],
+        correct: 0,
+        rationale: "Więzadło pierścieniowate tworzy pierścień kostno-więzadłowy umożliwiający swobodne obracanie się głowy kości promieniowej podczas pronacji i supinacji."
+      },
+      {
+        id: 57, cat: "Kończyna górna",
+        q: "Jaką funkcję biomechaniczną pełni błona międzykostna przedramienia?",
+        options: ["Łączy trzony kości przedramienia i przenosi siły ściskające z kości promieniowej na łokciową", "Umożliwia zgięcie grzbietowe ręki", "Produkuje maź dla stawu nadgarstkowego", "Oddziela kciuk od pozostałych palców"],
+        correct: 0,
+        rationale: "Większość obciążeń z dłoni trafia na koniec dalszy kości promieniowej; skośne włókna błony międzykostnej przekazują część tych sił na kość łokciową (która ma mocniejszy staw w łokciu)."
+      },
+      {
+        id: 58, cat: "Kończyna górna",
+        q: "Z ilu kości ułożonych w dwóch szeregach składa się nadgarstek człowieka?",
+        options: ["Z 8 kości (po 4 w szeregu bliższym i dalszym)", "Z 5 kości", "Z 7 kości", "Z 10 kości"],
+        correct: 0,
+        rationale: "Szereg bliższy: łódeczkowata, księżycowata, trójgraniasta, grochowata. Szereg dalszy: czworoboczna większa, czworoboczna mniejsza, główkowata, haczykowata."
+      },
+      {
+        id: 59, cat: "Kończyna górna",
+        q: "Która kość szeregu bliższego nadgarstka jest trzeszczką w ścięgnie mięśnia zginacza łokciowego nadgarstka i nie wchodzi w skład stawu promieniowo-nadgarstkowego?",
+        options: ["Kość grochowata (os pisiforme)", "Kość łódeczkowata", "Kość księżycowata", "Kość trójgraniasta"],
+        correct: 0,
+        rationale: "Głowę stawową stawu promieniowo-nadgarstkowego tworzą kości: łódeczkowata, księżycowata i trójgraniasta; kość grochowata leży na powierzchni dłoniowej kości trójgraniastej."
+      },
+      {
+        id: 60, cat: "Kończyna górna",
+        q: "Która kość nadgarstka ulega najczęstszym złamaniom po upadku na wyprostowaną rękę i jest zagrożona martwicą bieguna bliższego?",
+        options: ["Kość łódeczkowata (os scaphoideum)", "Kość haczykowata", "Kość czworoboczna mniejsza", "Kość grochowata"],
+        correct: 0,
+        rationale: "Naczynia krwionośne wnikają do kości łódeczkowatej od strony dalszej, więc złamanie jej talii odcina dopływ krwi do części bliższej."
+      },
+      {
+        id: 61, cat: "Kończyna górna",
+        q: "Jaki typ budowy ma staw nadgarstkowo-śródręczny kciuka (CMC I), umożliwiający opozycję (przeciwstawianie) kciuka?",
+        options: ["Staw siodełkowaty", "Staw zawiasowy", "Staw obrotowy", "Staw płaski"],
+        correct: 0,
+        rationale: "Staw siodełkowaty między kością czworoboczną większą a I kością śródręcza umożliwia zgięcie/wyprost, odwodzenie/przywodzenie oraz ruch złożony – opozycję."
+      },
+      {
+        id: 62, cat: "Kończyna górna",
+        q: "Ile paliczków buduje kciuk, a ile pozostałe palce ręki (II–V)?",
+        options: ["Kciuk ma 2 paliczki, a palce II–V mają po 3 paliczki", "Wszystkie palce mają po 3 paliczki", "Kciuk ma 3 paliczki, a palec mały 2 paliczki", "Kciuk ma 1 paliczek, a pozostałe po 3"],
+        correct: 0,
+        rationale: "Kciuk posiada paliczek bliższy i dalszy (brak paliczka środkowego), natomiast palce II–V mają paliczek bliższy, środkowy i dalszy."
+      },
+      {
+        id: 63, cat: "Kończyna górna",
+        q: "Dlaczego odwiedzenie ręki w kierunku łokciowym (przywiedzenie ręki) ma większy zakres niż odwiedzenie promieniowe?",
+        options: ["Wyrostek rylcowaty kości promieniowej schodzi niżej niż łokciowej i szybciej blokuje ruch", "Kość łokciowa łączy się bezpośrednio z kością księżycowatą", "Więzadło poboczne łokciowe nie istnieje", "Kość grochowata blokuje ruch promieniowy"],
+        correct: 0,
+        rationale: "Wyrostek rylcowaty kości promieniowej sięga bardziej dystalnie, więc przy odwiedzeniu promieniowym kość łódeczkowata szybko opiera się o niego."
+      },
+      {
+        id: 64, cat: "Kończyna górna",
+        q: "Czym jest fizjologiczny kąt koślawy (kąt noszenia) w stawie łokciowym?",
+        options: ["Niewielkim odchyleniem przedramienia na zewnątrz (ok. 10–15°) w pełnym wyproście i supinacji", "Wygięciem kości ramiennej ku tyłowi", "Zgięciem nadgarstka w stronę dłoniową", "Rotacją wewnętrzną łopatki"],
+        correct: 0,
+        rationale: "Kąt noszenia sprawia, że podczas chodu z wyprostowanymi kończynami górnymi przedramiona i dłonie swobodnie omijają biodra."
+      },
+      {
+        id: 65, cat: "Kończyna górna",
+        q: "Jakiego typu stawami są stawy międzypaliczkowe ręki?",
+        options: ["Stawami zawiasowymi (jednoosiowymi)", "Stawami kulistymi", "Stawami siodełkowatymi", "Stawami obrotowymi"],
+        correct: 0,
+        rationale: "Stawy międzypaliczkowe (PIP i DIP) działają jak zawiasy, umożliwiając wyłącznie zginanie i prostowanie palców."
+      },
+
+      // === DZIAŁ 4: MIEDNICA I KOŃCZYNA DOLNA (66-85) ===
+      {
+        id: 66, cat: "Miednica i kończyna dolna",
+        q: "Z jakich trzech kości zrośniętych w obrębie panewki (acetabulum) powstaje pojedyncza kość miedniczna?",
+        options: ["Kości biodrowej, kości kulszowej oraz kości łonowej", "Kości krzyżowej, biodrowej i guzicznej", "Kości udowej, kulszowej i łonowej", "Kości biodrowej, krzyżowej i łonowej"],
+        correct: 0,
+        rationale: "U dzieci kości biodrowa, kulszowa i łonowa połączone są chrząstką Y-kształtną w panewce stawu biodrowego, a u dorosłych zrastają się w jedną kość miedniczną."
+      },
+      {
+        id: 67, cat: "Miednica i kończyna dolna",
+        q: "Jakie struktury kostne tworzą obręcz kończyny dolnej (miednicę kostną)?",
+        options: ["Dwie kości miedniczne, kość krzyżowa oraz kość guziczna", "Dwie kości miedniczne oraz dwie kości udowe", "Kość krzyżowa oraz spojenie łonowe wyłącznie", "Kości biodrowe oraz kręgi lędźwiowe L4–L5"],
+        correct: 0,
+        rationale: "Obręcz miedniczna to zamknięty pierścień kostny utworzony przez prawą i lewą kość miedniczną (złączone z przodu spojeniem łonowym) oraz kość krzyżową i guziczną z tyłu."
+      },
+      {
+        id: 68, cat: "Miednica i kończyna dolna",
+        q: "Czym różni się miednica kostna kobiety od miednicy mężczyzny?",
+        options: ["Ma szerszy kąt podłonowy (>90°), niższe talerze biodrowe i bardziej przestronny otwór górny", "Ma węższy kąt podłonowy (<70°) i wyższe, bardziej pionowe talerze biodrowe", "Nie posiada spojenia łonowego", "Składa się z 7 kręgów krzyżowych"],
+        correct: 0,
+        rationale: "Cechy miednicy żeńskiej (szerszy łuk łonowy, szerszy rozstaw guzów kulszowych, krótsza i szersza kość krzyżowa) są przystosowaniem do porodu."
+      },
+      {
+        id: 69, cat: "Miednica i kończyna dolna",
+        q: "Na czym polega ruch nutacji kości krzyżowej w stawie krzyżowo-biodrowym?",
+        options: ["Podstawa kości krzyżowej pochyla się w przód i w dół, a wierzchołek cofa ku tyłowi", "Podstawa kości krzyżowej unosi się ku górze i tyłowi", "Kość krzyżowa obraca się wokół osi pionowej", "Kości biodrowe zbliżają się do spojenia łonowego"],
+        correct: 0,
+        rationale: "Nutacja („kiwnięcie” podstawą kości krzyżowej w przód/dół) towarzyszy przodopochyleniu miednicy i napina więzadła krzyżowo-guzowe i krzyżowo-kolcowe."
+      },
+      {
+        id: 70, cat: "Miednica i kończyna dolna",
+        q: "Które więzadło uznaje się za najsilniejsze więzadło w ludzkim organizmie?",
+        options: ["Więzadło biodrowo-udowe (ligamentum iliofemorale)", "Więzadło krzyżowe przednie (ACL)", "Więzadło obłe głowy kości udowej", "Więzadło żółte"],
+        correct: 0,
+        rationale: "Więzadło biodrowo-udowe (kształtu odwróconej litery Y) wytrzymuje obciążenia powyżej 300 kg; napina się podczas wyprostu uda, oszczędzając energię mięśni w staniu."
+      },
+      {
+        id: 71, cat: "Miednica i kończyna dolna",
+        q: "Jaką funkcję biomechaniczną pełni obrąbek panewkowy w stawie biodrowym?",
+        options: ["Pogłębia panewkę i uszczelnia staw, zwiększając jego stabilność", "Wytwarza maź stawową", "Łączy bezpośrednio krętarz większy z talerzem biodrowym", "Zastępuje więzadło biodrowo-udowe"],
+        correct: 0,
+        rationale: "Chrząstkowłóknisty obrąbek panewkowy obejmuje głowę kości udowej poza jej równik, zwiększając głębokość panewki i utrzymując podciśnienie stabilizujące staw."
+      },
+      {
+        id: 72, cat: "Miednica i kończyna dolna",
+        q: "Ile wynosi prawidłowy kąt szyjkowo-trzonowy (inklinacji) kości udowej u dorosłego człowieka?",
+        options: ["Około 125°–128°", "Około 90°", "Około 165°", "Około 105°"],
+        correct: 0,
+        rationale: "Kąt szyjkowo-trzonowy (~125–128°) oddala trzon kości udowej od miednicy, zapobiegając jej konfliktowi z talerzem biodrowym podczas ruchów."
+      },
+      {
+        id: 73, cat: "Miednica i kończyna dolna",
+        q: "Jaką rolę w biomechanice stawu kolanowego odgrywają łąkotki (przyśrodkowa i boczna)?",
+        options: ["Dopasowują niespójne powierzchnie kłykci, amortyzują wstrząsy i rozkładają obciążenia", "Łączą rzepkę z guzowatością piszczeli", "Ograniczają przeprost stawu łokciowego", "Zastępują więzadła krzyżowe"],
+        correct: 0,
+        rationale: "Wypukłe kłykcie kości udowej spoczywają na niemal płaskim plateau kości piszczelowej – łąkotki tworzą dla nich sprężyste panewki i przejmują ok. 50% obciążeń."
+      },
+      {
+        id: 74, cat: "Miednica i kończyna dolna",
+        q: "Dlaczego łąkotka przyśrodkowa ulega uszkodzeniom znacznie częściej niż łąkotka boczna?",
+        options: ["Jest zrośnięta z torebką stawową i więzadłem pobocznym piszczelowym, co ogranicza jej ruchomość", "Jest zbudowana z kości gąbczastej zamiast chrząstki", "Nie jest pokryta mazią stawową", "Przenosi 100% ciężaru ciała podczas stania"],
+        correct: 0,
+        rationale: "Łąkotka boczna jest bardziej ruchoma i łatwiej ucieka spod kłykcia przy skręcie; przyśrodkowa jest silnie zakotwiczona do MCL i torebki, więc łatwiej ulega zakleszczeniu i rozerwaniu."
+      },
+      {
+        id: 75, cat: "Miednica i kończyna dolna",
+        q: "Jaką podstawową funkcję mechaniczną spełnia więzadło krzyżowe przednie (ACL) w stawie kolanowym?",
+        options: ["Ogranicza nadmierne przesunięcie kości piszczelowej ku przodowi względem kości udowej", "Ogranicza przesunięcie kości piszczelowej ku tyłowi", "Dociska rzepkę do bruzdy międzykłykciowej", "Łączy strzałkę z kością skokową"],
+        correct: 0,
+        rationale: "ACL biegnie od przedniego pola międzykłykciowego piszczeli ku górze, tyłowi i bokowi do kłykcia bocznego kości udowej, hamując tzw. szufladę przednią."
+      },
+      {
+        id: 76, cat: "Miednica i kończyna dolna",
+        q: "Jaką funkcję pełni rzepka (patella) jako największa trzeszczka w organizmie człowieka?",
+        options: ["Zwiększa ramię dźwigni mięśnia czworogłowego uda i chroni staw od przodu", "Łączy kość piszczelową ze strzałkową", "Umożliwia ruchy odwodzenia w stawie kolanowym", "Zastępuje łąkotkę boczną"],
+        correct: 0,
+        rationale: "Rzepka odsuwa ścięgno mięśnia czworogłowego od osi obrotu kolana, zwiększając efektywność (moment siły) wyprostu o ok. 30%."
+      },
+      {
+        id: 77, cat: "Miednica i kończyna dolna",
+        q: "Na czym polega mechanizm „ryglowania” (automatycznej rotacji końcowej) stawu kolanowego w ostatnich 15° wyprostu?",
+        options: ["W zamkniętym łańcuchu kość udowa wykonuje rotację wewnętrzną względem piszczeli, blokując staw", "Rzepka wysuwa się bocznie poza kłykieć", "Więzadła krzyżowe całkowicie się rozluźniają", "Kość strzałkowa obraca się o 45°"],
+        correct: 0,
+        rationale: "Dzięki większej powierzchni kłykcia przyśrodkowego kości udowej w końcowej fazie wyprostu dochodzi do automatycznego zaryglowania stawu, co pozwala stać bez ciągłego napięcia mięśni."
+      },
+      {
+        id: 78, cat: "Miednica i kończyna dolna",
+        q: "Która kość goleni przenosi główny ciężar ciała (ok. 85–90%) i wchodzi w skład stawu kolanowego?",
+        options: ["Kość piszczelowa (tibia)", "Kość strzałkowa (fibula)", "Kość skokowa", "Rzepka"],
+        correct: 0,
+        rationale: "Kość piszczelowa leży przyśrodkowo i przenosi niemal całe obciążenie osiowe; strzałka leży bocznie, nie tworzy stawu kolanowego i służy głównie jako przyczep mięśni oraz boczna stabilizacja kostki."
+      },
+      {
+        id: 79, cat: "Miednica i kończyna dolna",
+        q: "Jakie ruchy zachodzą w stawie skokowym górnym (skokowo-goleniowym)?",
+        options: ["Zgięcie grzbietowe oraz zgięcie podeszwowe stopy", "Wyłącznie inwersja i ewersja", "Rotacja wokół osi długiej podudzia", "Odwodzenie i przywodzenie palców"],
+        correct: 0,
+        rationale: "Staw skokowy górny to staw zawiasowy utworzony przez widełki kostek (piszczeli i strzałki) oraz bloczek kości skokowej – odpowiada za zgięcie grzbietowe i podeszwowe."
+      },
+      {
+        id: 80, cat: "Miednica i kończyna dolna",
+        q: "Dlaczego staw skokowy górny jest najbardziej stabilny w zgięciu grzbietowym stopy?",
+        options: ["Bloczek kości skokowej jest szerszy z przodu niż z tyłu i klinuje się w widełkach kostek", "W zgięciu grzbietowym więzadło ATFL ulega całkowitemu rozluźnieniu", "Kość piętowa blokuje kość piszczelową od przodu", "Ścięgno Achillesa jest wtedy całkowicie luźne"],
+        correct: 0,
+        rationale: "Przednia część bloczka kości skokowej jest szersza, więc przy uniesieniu stopy w górę (zgięcie grzbietowe) wypełnia ciasno widełki kostek; w zgięciu podeszwowym staw ma więcej luzu i łatwiej o skręcenie."
+      },
+      {
+        id: 81, cat: "Miednica i kończyna dolna",
+        q: "W których stawach zachodzą główne ruchy odwracania (inwersji) i nawracania (ewersji) stopy?",
+        options: ["W stawie skokowym dolnym (skokowo-piętowo-łódkowym) i stawie poprzecznym stępu", "Wyłącznie w stawie skokowym górnym", "W stawach międzypaliczkowych", "W więzozroście piszczelowo-strzałkowym bliższym"],
+        correct: 0,
+        rationale: "Inwersja (uniesienie przyśrodkowego brzegu stopy) i ewersja (uniesienie bocznego brzegu) zachodzą poniżej kości skokowej – w stawie podskokowym i skokowo-piętowo-łódkowym."
+      },
+      {
+        id: 82, cat: "Miednica i kończyna dolna",
+        q: "Które więzadło po bocznej stronie stawu skokowego ulega uszkodzeniu najczęściej podczas skręcenia inwersyjnego stopy?",
+        options: ["Więzadło skokowo-strzałkowe przednie (ATFL)", "Więzadło trójgraniaste", "Więzadło krzyżowe tylne", "Więzadło podeszwowe długie"],
+        correct: 0,
+        rationale: "ATFL jest najsłabszym pasmem więzadła pobocznego bocznego i napina się przy zgięciu podeszwowym z inwersją – dlatego ulega naderwaniu w ponad 80% skręceń kostki."
+      },
+      {
+        id: 83, cat: "Miednica i kończyna dolna",
+        q: "Które trzy punkty kostne wyznaczają tzw. trójkąt podparcia stopy odpowiadający za jej statyczną stabilność?",
+        options: ["Guz piętowy, głowa I kości śródstopia oraz głowa V kości śródstopia", "Kostka przyśrodkowa, kostka boczna i kość sześcienna", "Paliczek dalszy palucha, kość łódkowata i pięta", "Kość skokowa, klinowata przyśrodkowa i III kość śródstopia"],
+        correct: 0,
+        rationale: "Między tymi trzema punktami rozpięte są łuki stopy: podłużny przyśrodkowy (dynamiczny), podłużny boczny (podporowy) oraz poprzeczny przedni."
+      },
+      {
+        id: 84, cat: "Miednica i kończyna dolna",
+        q: "Która kość stępu stanowi tzw. zwornik łuku podłużnego przyśrodkowego stopy?",
+        options: ["Kość skokowa (talus)", "Kość piętowa (calcaneus)", "Kość sześcienna (os cuboideum)", "Kość klinowata boczna"],
+        correct: 0,
+        rationale: "Kość skokowa leży na szczycie sklepienia stopy, przyjmuje ciężar z goleni i rozdziela go do tyłu (na kość piętową) oraz do przodu (przez kość łódkowatą na przodostopie)."
+      },
+      {
+        id: 85, cat: "Miednica i kończyna dolna",
+        q: "Jaką rolę pełni rozcięgno podeszwowe w tzw. mechanizmie kołowrotu (windlass mechanism) podczas wyprostu palucha?",
+        options: ["Nawija się na głowę I kości śródstopia, skraca stopę i unosi jej łuk podłużny", "Rozluźnia łuk stopy, powodując płaskostopie", "Zgina podeszwowo wszystkie palce stopy", "Blokuje staw kolanowy w zgięciu"],
+        correct: 0,
+        rationale: "Podczas odbicia stopy wyprost palucha napina rozcięgno podeszwowe niczym linę na kołowrocie, zmieniając stopę ze sprężystego amortyzatora w sztywną dźwignię."
+      },
+
+      // === DZIAŁ 5: POSTAWA CIAŁA, PUNKTY KOSTNE I WADY (86-100) ===
+      {
+        id: 86, cat: "Postawa i wady",
+        q: "Przez jakie anatomiczne punkty kostne przebiega prawidłowa linia pionu (linia grawitacyjna) ciała oglądana z boku (w płaszczyźnie strzałkowej)?",
+        options: ["Przewód słuchowy zewnętrzny, wyrostek barkowy, krętarz większy i tuż przed kostką boczną", "Czubek nosa, rękojeść mostka, rzepka i paluch", "Guzowatość potyliczna, kąt dolny łopatki, guz kulszowy i pięta", "Wyrostek sutkowaty, łokieć, spojenie łonowe i kostka przyśrodkowa"],
+        correct: 0,
+        rationale: "Wzorcowy pion w płaszczyźnie strzałkowej przechodzi przez otwór słuchowy zewnętrzny, trzon kręgów szyjnych/lędźwiowych, wyrostek barkowy, krętarz większy kości udowej, lekko przed osią stawu kolanowego i ok. 2–3 cm przed kostką boczną."
+      },
+      {
+        id: 87, cat: "Postawa i wady",
+        q: "Jakie położenie względem siebie przyjmują kolec biodrowy przedni górny (ASIS) oraz spojenie łonowe w neutralnie ustawionej miednicy?",
+        options: ["Leżą w jednej wspólnej płaszczyźnie czołowej (pionowej)", "ASIS znajduje się 5 cm przed spojeniem łonowym", "Spojenie łonowe wystaje znacznie przed ASIS", "ASIS leży na wysokości pępka"],
+        correct: 0,
+        rationale: "W pozycji neutralnej miednicy oba kolce biodrowe przednie górne i spojenie łonowe wyznaczają pionową płaszczyznę czołową (a kąt przodopochylenia między ASIS a PSIS wynosi ok. 7–12°)."
+      },
+      {
+        id: 88, cat: "Postawa i wady",
+        q: "Na jakiej wysokości kręgosłupa rzutuje się w pozycji stojącej kąt dolny łopatki?",
+        options: ["Na wysokości wyrostka kolczystego VII kręgu piersiowego (Th7)", "Na wysokości kręgu szyjnego C7", "Na wysokości II kręgu lędźwiowego (L2)", "Na wysokości kolców biodrowych tylnych górnych"],
+        correct: 0,
+        rationale: "Grzebień łopatki odpowiada poziomowi Th3, natomiast kąt dolny łopatki rzutuje się na wyrostek kolczysty Th7 (lub 7. międzyżebrze)."
+      },
+      {
+        id: 89, cat: "Postawa i wady",
+        q: "Jaki poziom kręgosłupa wyznacza linia łącząca najwyższe punkty grzebieni biodrowych (linia Tuffiera)?",
+        options: ["Wyrostek kolczysty kręgu L4 lub przestrzeń międzykręgową L4–L5", "Wyrostek kolczysty kręgu Th12", "Kość guziczną", "Wyrostek kolczysty kręgu L1"],
+        correct: 0,
+        rationale: "Najwyższe punkty grzebieni biodrowych znajdują się na wysokości L4/L5, natomiast kolce biodrowe tylne górne (PSIS) wyznaczają poziom S2."
+      },
+      {
+        id: 90, cat: "Postawa i wady",
+        q: "Jaki punkt kostny poniżej kolana służy jako miejsce przyczepu więzadła rzepki?",
+        options: ["Guzowatość kości piszczelowej (tuberositas tibiae)", "Głowa kości strzałkowej", "Kostka przyśrodkowa", "Krętarz mniejszy"],
+        correct: 0,
+        rationale: "Guzowatość kości piszczelowej leży na przedniej powierzchni końca bliższego piszczeli i przyjmuje przyczep więzadła rzepki (będącego przedłużeniem ścięgna m. czworogłowego)."
+      },
+      {
+        id: 91, cat: "Postawa i wady",
+        q: "Co charakteryzuje wadę postawy nazywaną plecami okrągłymi (dorsum rotundum)?",
+        options: ["Nadmiernie pogłębiona kifoza piersiowa, wysunięcie barków i głowy w przód", "Całkowite zniesienie krzywizn kręgosłupa", "Nadmiernie pogłębiona lordoza lędźwiowa przy spłaszczonej kifozie", "Boczne skrzywienie kręgosłupa z garbem żebrowym"],
+        correct: 0,
+        rationale: "Plecy okrągłe to hiperkifoza piersiowa połączona z protrakcją barków (odstawaniem łopatek), spłaszczeniem klatki piersiowej i wysunięciem głowy w przód."
+      },
+      {
+        id: 92, cat: "Postawa i wady",
+        q: "Jaka zmiana w ustawieniu miednicy i kręgosłupa jest typowa dla pleców wklęsłych (dorsum concavum)?",
+        options: ["Zwiększone przodopochylenie miednicy oraz pogłębiona lordoza lędźwiowa", "Tyłopochylenie miednicy i zniesienie lordozy lędźwiowej", "Pogłębienie kifozy krzyżowej przy braku lordozy szyjnej", "Zbliżenie kostek przyśrodkowych i oddalenie kolan"],
+        correct: 0,
+        rationale: "W plecach wklęsłych (hiperlordozie lędźwiowej) miednica pochyla się nadmiernie w przód, brzuch jest uwypuklony, a pośladki silnie uwydatnione."
+      },
+      {
+        id: 93, cat: "Postawa i wady",
+        q: "Jaki mechanizm odpowiada za powstanie tzw. pleców płaskich (dorsum planum)?",
+        options: ["Zniesienie lub znaczne spłaszczenie fizjologicznych krzywizn w płaszczyźnie strzałkowej", "Jednoczesne pogłębienie kifozy piersiowej i lordozy lędźwiowej", "Rotacja kręgów szyjnych w płaszczyźnie poprzecznej", "Przerośnięcie wyrostków kolczystych w odcinku piersiowym"],
+        correct: 0,
+        rationale: "Plecy płaskie wiążą się ze zmniejszonym pochyleniem miednicy i utratą amortyzujących krzywizn (kifozy piersiowej i lordozy lędźwiowej), co zwiększa ryzyko przeciążeń dysków."
+      },
+      {
+        id: 94, cat: "Postawa i wady",
+        q: "Czym charakteryzują się plecy wklęsło-okrągłe?",
+        options: ["Jednoczesnym pogłębieniem lordozy lędźwiowej oraz kifozy piersiowej", "Brakiem lordozy szyjnej przy prawidłowej kifozie piersiowej", "Bocznym skrzywieniem w odcinku piersiowo-lędźwiowym", "Wyłącznie wysunięciem głowy do przodu"],
+        correct: 0,
+        rationale: "W tej wadzie zwiększeniu przodopochylenia miednicy i hiperlordozie lędźwiowej towarzyszy kompensacyjne pogłębienie kifozy piersiowej."
+      },
+      {
+        id: 95, cat: "Postawa i wady",
+        q: "Czym różni się skolioza strukturalna od postawy skoliotycznej (funkcjonalnej)?",
+        options: ["Skolioza strukturalna jest trójpłaszczyznowa i zawiera utrwaloną rotację kręgów oraz garb żebrowy", "Postawa skoliotyczna jest nieodwracalna i wymaga operacji", "Skolioza strukturalna dotyczy wyłącznie kości miednicznej", "Postawa skoliotyczna zawsze powoduje zrost żeber z łopatką"],
+        correct: 0,
+        rationale: "Skolioza to deformacja w 3 płaszczyznach: czołowej (wygięcie boczne), poprzecznej (rotacja kręgów i garb żebrowy) oraz strzałkowej (zaburzenie kifozy/lordozy). Postawa skoliotyczna znika przy skłonie lub leżeniu."
+      },
+      {
+        id: 96, cat: "Postawa i wady",
+        q: "Dlaczego w skoliozie piersiowej powstaje garb żebrowy po stronie wypukłości skrzywienia?",
+        options: ["Trzony kręgów rotują się w stronę wypukłości skrzywienia, wypychając tylne kąty żeber ku tyłowi", "Żebra po stronie wypukłości rosną dwa razy szybciej", "Łopatka przemieszcza się pod obojczyk", "Wyrostki kolczyste obracają się w stronę wypukłości"],
+        correct: 0,
+        rationale: "W skoliozie trzony kręgów obracają się w stronę wypukłą łuku (a wyrostki kolczyste w stronę wklęsłą), ciągnąc za sobą żebra i tworząc garb żebrowy widoczny w teście Adamsa (skłonie w przód)."
+      },
+      {
+        id: 97, cat: "Postawa i wady",
+        q: "Jak ustawione są kończyny dolne w wadzie nazywanej kolanami koślawymi (genu valgum)?",
+        options: ["Kolana zbliżają się do siebie, a kostki przyśrodkowe są oddalone (kształt litery X)", "Kolana są oddalone od siebie, a kostki stykają się (kształt litery O)", "Stawy kolanowe wyginają się nadmiernie ku tyłowi", "Stopy ustawione są wyłącznie na krawędziach bocznych"],
+        correct: 0,
+        rationale: "W kolanie koślawym oś podudzia odchyla się na zewnątrz względem osi uda (nogi w X), co przeciąża przedział boczny kolana i więzadło poboczne przyśrodkowe."
+      },
+      {
+        id: 98, cat: "Postawa i wady",
+        q: "Jak ustawione są kończyny dolne w wadzie nazywanej kolanami szpotawymi (genu varum)?",
+        options: ["Kolana oddalają się na zewnątrz, a kostki przyśrodkowe stykają się (kształt litery O)", "Kolana stykają się ze sobą, a pięty są rozstawione szeroko", "Rzepki skierowane są całkowicie w stronę dołów podkolanowych", "Kość udowa zrośnięta jest z kością piszczelową"],
+        correct: 0,
+        rationale: "W kolanie szpotawym oś podudzia odchyla się do wewnątrz (nogi w O), co zwiększa nacisk na przedział przyśrodkowy stawu kolanowego i łąkotkę przyśrodkową."
+      },
+      {
+        id: 99, cat: "Postawa i wady",
+        q: "Na czym polega płaskostopie podłużne (pes planus)?",
+        options: ["Na obniżeniu lub zaniku łuku podłużnego przyśrodkowego stopy i koślawym ustawieniu pięty", "Na nadmiernym wydrążeniu sklepienia stopy i przykurczu palców", "Na bocznym odchyleniu palucha w stronę palca małego", "Na zrośnięciu kości skokowej z piszczelową"],
+        correct: 0,
+        rationale: "W płaskostopiu podłużnym niewydolność aparatu więzadłowo-mięśniowego prowadzi do obniżenia kości łódkowatej i spłaszczenia przyśrodkowego łuku stopy."
+      },
+      {
+        id: 100, cat: "Postawa i wady",
+        q: "Jakie deformacje składają się na tzw. stopę płasko-koślawą (pes planovalgus)?",
+        options: ["Obniżenie łuku podłużnego stopy oraz odchylenie kości piętowej na zewnątrz (pronacja tyłostopia)", "Uniesienie łuku podłużnego oraz szpotawe ustawienie pięty", "Zgięcie grzbietowe palucha przy braku ruchu w stawie skokowym", "Skrócenie kości piszczelowej względem strzałkowej"],
+        correct: 0,
+        rationale: "W stopie płasko-koślawej ścięgno Achillesa załamuje się ku bokowi (pięta ucieka na zewnątrz), a przyśrodkowy brzeg stopy zapada się do podłoża."
+      }
+    ];
+
+    // STAN APLIKACJI
+    let currentMode = 'quiz';
+    let activeDeck = [];
+    let currentIndex = 0;
+    let userAnswers = {}; // id -> { selectedIndex, isCorrect, shuffledOptions }
+    let knownCards = new Set(); // zbiór id opanowanych fiszek
+    let onlyUnknown = false;
+    let isFlipped = false;
+
+    // Funkcja tasująca (Fisher-Yates)
+    function fisherYatesShuffle(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    // Przygotowanie tasowanych opcji dla każdego pytania
+    function prepareShuffledOptions(qObj) {
+      const mapped = qObj.options.map((opt, idx) => ({
+        text: opt,
+        isCorrect: idx === qObj.correct
+      }));
+      return fisherYatesShuffle(mapped);
+    }
+
+    // Inicjalizacja talii
+    function initDeck(shouldShuffle = false) {
+      const selectedCat = document.getElementById('category-select').value;
+      let filtered = selectedCat === 'ALL'
+        ? [...ALL_QUESTIONS]
+        : ALL_QUESTIONS.filter(item => item.cat === selectedCat);
+
+      if (currentMode === 'flashcards' && onlyUnknown) {
+        const unknownOnly = filtered.filter(item => !knownCards.has(item.id));
+        if (unknownOnly.length > 0) {
+          filtered = unknownOnly;
+        }
+      }
+
+      activeDeck = shouldShuffle ? fisherYatesShuffle(filtered) : filtered;
+      currentIndex = 0;
+      isFlipped = false;
+
+      // Jeśli wymieszano, wygeneruj nową kolejność odpowiedzi dla nieodpowiedzianych pytań
+      activeDeck.forEach(q => {
+        if (!userAnswers[q.id] || shouldShuffle) {
+          if (shouldShuffle) delete userAnswers[q.id];
+          userAnswers[q.id] = {
+            selectedIndex: null,
+            isCorrect: null,
+            shuffledOptions: prepareShuffledOptions(q)
+          };
+        }
+      });
+
+      renderAll();
+    }
+
+    // Tasowanie na żądanie użytkownika
+    function shuffleDeck() {
+      initDeck(true);
+    }
+
+    // Zmiana filtra działu
+    function applyFilter() {
+      initDeck(false);
+    }
+
+    // Reset postępów
+    function resetProgress() {
+      userAnswers = {};
+      knownCards.clear();
+      onlyUnknown = false;
+      document.getElementById('fc-only-unknown').checked = false;
+      initDeck(false);
+    }
+
+    // Przełączanie trybu Quiz / Fiszki
+    function switchMode(mode) {
+      currentMode = mode;
+      const tabQuiz = document.getElementById('tab-quiz');
+      const tabFc = document.getElementById('tab-flashcards');
+      const quizView = document.getElementById('quiz-view');
+      const fcView = document.getElementById('flashcards-view');
+
+      if (mode === 'quiz') {
+        tabQuiz.className = "px-4 py-2 rounded-lg text-sm font-semibold transition bg-indigo-600 text-white shadow";
+        tabFc.className = "px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-300 hover:text-white";
+        quizView.classList.remove('hidden');
+        fcView.classList.add('hidden');
+      } else {
+        tabFc.className = "px-4 py-2 rounded-lg text-sm font-semibold transition bg-indigo-600 text-white shadow";
+        tabQuiz.className = "px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-300 hover:text-white";
+        fcView.classList.remove('hidden');
+        quizView.classList.add('hidden');
+      }
+      initDeck(false);
+    }
+
+    // Renderowanie widoku Quizu
+    function renderQuiz() {
+      if (activeDeck.length === 0) return;
+      const q = activeDeck[currentIndex];
+      const state = userAnswers[q.id];
+
+      // Statystyki ogólne w bieżącej talii
+      let correctCount = 0;
+      let wrongCount = 0;
+      activeDeck.forEach(item => {
+        const st = userAnswers[item.id];
+        if (st && st.selectedIndex !== null) {
+          if (st.isCorrect) correctCount++;
+          else wrongCount++;
+        }
+      });
+      const answeredCount = correctCount + wrongCount;
+      const pct = Math.round((answeredCount / activeDeck.length) * 100);
+
+      document.getElementById('quiz-progress-label').textContent = `Pytanie ${currentIndex + 1} z ${activeDeck.length}`;
+      document.getElementById('quiz-percent-label').textContent = `Ukończono: ${answeredCount}/${activeDeck.length} (${pct}%)`;
+      document.getElementById('quiz-progress-bar').style.width = `${Math.max(2, pct)}%`;
+      document.getElementById('score-correct').textContent = correctCount;
+      document.getElementById('score-wrong').textContent = wrongCount;
+
+      document.getElementById('q-category-badge').textContent = q.cat;
+      document.getElementById('q-number-badge').textContent = `Baza: #${q.id}`;
+      document.getElementById('q-text').textContent = q.q;
+      document.getElementById('jump-input').max = activeDeck.length;
+      document.getElementById('jump-input').value = currentIndex + 1;
+
+      // Renderowanie opcji
+      const optionsContainer = document.getElementById('q-options');
+      optionsContainer.innerHTML = '';
+      const letters = ['A', 'B', 'C', 'D'];
+
+      state.shuffledOptions.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        const isAnswered = state.selectedIndex !== null;
+
+        let classes = "w-full text-left p-4 rounded-xl border-2 font-medium text-sm sm:text-base transition flex items-start gap-3 ";
+        if (!isAnswered) {
+          classes += "bg-white border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/40 text-slate-800 cursor-pointer";
+        } else {
+          if (opt.isCorrect) {
+            classes += "bg-emerald-50 border-emerald-500 text-emerald-950 font-semibold";
+          } else if (idx === state.selectedIndex) {
+            classes += "bg-rose-50 border-rose-500 text-rose-950";
+          } else {
+            classes += "bg-slate-50 border-slate-200 text-slate-400 opacity-75";
+          }
+        }
+
+        btn.className = classes;
+        btn.disabled = isAnswered;
+        btn.onclick = () => selectAnswer(idx);
+
+        btn.innerHTML = `
+          <span class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-extrabold shrink-0 ${
+            !isAnswered
+              ? 'bg-slate-100 text-slate-700'
+              : opt.isCorrect
+                ? 'bg-emerald-600 text-white'
+                : idx === state.selectedIndex
+                  ? 'bg-rose-600 text-white'
+                  : 'bg-slate-200 text-slate-500'
+          }">${letters[idx]}</span>
+          <span class="pt-0.5">${opt.text}</span>
+        `;
+        optionsContainer.appendChild(btn);
+      });
+
+      // Wyjaśnienie
+      const ratBox = document.getElementById('q-rationale-box');
+      if (state.selectedIndex !== null) {
+        ratBox.classList.remove('hidden');
+        if (state.isCorrect) {
+          ratBox.className = "mt-6 p-4 rounded-xl border border-emerald-200 bg-emerald-50/80 text-emerald-900 text-sm leading-relaxed";
+          document.getElementById('q-rationale-title').textContent = "✅ Świetnie! Poprawna odpowiedź.";
+        } else {
+          ratBox.className = "mt-6 p-4 rounded-xl border border-rose-200 bg-rose-50/80 text-rose-900 text-sm leading-relaxed";
+          document.getElementById('q-rationale-title').textContent = "❌ Błędna odpowiedź. Sprawdź wyjaśnienie:";
+        }
+        document.getElementById('q-rationale-text').textContent = q.rationale;
+      } else {
+        ratBox.classList.add('hidden');
+      }
+
+      document.getElementById('btn-prev').disabled = currentIndex === 0;
+      document.getElementById('btn-next').textContent = currentIndex === activeDeck.length - 1 ? "Zakończ / Od początku ↺" : "Następne →";
+
+      renderQuestionGrid();
+    }
+
+    function selectAnswer(optionIdx) {
+      const q = activeDeck[currentIndex];
+      const state = userAnswers[q.id];
+      if (state.selectedIndex !== null) return;
+
+      state.selectedIndex = optionIdx;
+      state.isCorrect = state.shuffledOptions[optionIdx].isCorrect;
+      renderQuiz();
+    }
+
+    function nextQuestion() {
+      if (currentIndex < activeDeck.length - 1) {
+        currentIndex++;
+      } else {
+        currentIndex = 0;
+      }
+      renderQuiz();
+    }
+
+    function prevQuestion() {
+      if (currentIndex > 0) {
+        currentIndex--;
+        renderQuiz();
+      }
+    }
+
+    function jumpToQuestion(val) {
+      const num = parseInt(val, 10);
+      if (!isNaN(num) && num >= 1 && num <= activeDeck.length) {
+        currentIndex = num - 1;
+        renderQuiz();
+      }
+    }
+
+    function renderQuestionGrid() {
+      const grid = document.getElementById('question-grid');
+      grid.innerHTML = '';
+      activeDeck.forEach((item, idx) => {
+        const st = userAnswers[item.id];
+        const cell = document.createElement('button');
+        let bg = "bg-slate-100 text-slate-600 hover:bg-slate-200";
+        if (st && st.selectedIndex !== null) {
+          bg = st.isCorrect ? "bg-emerald-500 text-white" : "bg-rose-500 text-white";
+        }
+        if (idx === currentIndex) {
+          bg += " ring-2 ring-indigo-600 ring-offset-1 font-extrabold";
+        }
+        cell.className = `h-7 rounded text-xs font-semibold transition ${bg}`;
+        cell.textContent = idx + 1;
+        cell.onclick = () => {
+          currentIndex = idx;
+          renderQuiz();
+        };
+        grid.appendChild(cell);
+      });
+    }
+
+    // ==================== LOGIKA FISZEK ====================
+    function renderFlashcard() {
+      if (activeDeck.length === 0) return;
+      const item = activeDeck[currentIndex];
+      const inner = document.getElementById('flashcard-inner');
+
+      if (isFlipped) {
+        inner.classList.add('rotate-y-180');
+      } else {
+        inner.classList.remove('rotate-y-180');
+      }
+
+      document.getElementById('fc-counter').textContent = `Fiszka ${currentIndex + 1} z ${activeDeck.length}`;
+      document.getElementById('fc-known-count').textContent = knownCards.size;
+      document.getElementById('fc-front-cat').textContent = item.cat;
+      document.getElementById('fc-front-text').textContent = item.q;
+      document.getElementById('fc-back-id').textContent = `Baza #${item.id}`;
+      document.getElementById('fc-back-answer').textContent = item.options[item.correct];
+      document.getElementById('fc-back-rationale').textContent = item.rationale;
+
+      const badge = document.getElementById('fc-status-badge');
+      if (knownCards.has(item.id)) {
+        badge.textContent = "✅ Opanowane";
+        badge.className = "text-xs font-bold text-emerald-600";
+      } else {
+        badge.textContent = "⏳ Do nauki";
+        badge.className = "text-xs font-semibold text-amber-600";
+      }
+    }
+
+    function flipCard() {
+      isFlipped = !isFlipped;
+      renderFlashcard();
+    }
+
+    function nextCard() {
+      isFlipped = false;
+      currentIndex = (currentIndex + 1) % activeDeck.length;
+      renderFlashcard();
+    }
+
+    function prevCard() {
+      isFlipped = false;
+      currentIndex = (currentIndex - 1 + activeDeck.length) % activeDeck.length;
+      renderFlashcard();
+    }
+
+    function markCardKnown(isKnown) {
+      const item = activeDeck[currentIndex];
+      if (isKnown) {
+        knownCards.add(item.id);
+      } else {
+        knownCards.delete(item.id);
+      }
+      isFlipped = false;
+      if (onlyUnknown && isKnown && activeDeck.length > 1) {
+        activeDeck.splice(currentIndex, 1);
+        if (currentIndex >= activeDeck.length) currentIndex = 0;
+      } else {
+        currentIndex = (currentIndex + 1) % activeDeck.length;
+      }
+      renderFlashcard();
+    }
+
+    function toggleUnknownFilter() {
+      onlyUnknown = document.getElementById('fc-only-unknown').checked;
+      initDeck(false);
+    }
+
+    function renderAll() {
+      if (currentMode === 'quiz') renderQuiz();
+      else renderFlashcard();
+    }
+
+    // Skróty klawiaturowe (Spacja obraca fiszkę, strzałki zmieniają kartę)
+    document.addEventListener('keydown', (e) => {
+      if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return;
+      if (currentMode === 'flashcards') {
+        if (e.code === 'Space') {
+          e.preventDefault();
+          flipCard();
+        } else if (e.code === 'ArrowRight') {
+          nextCard();
+        } else if (e.code === 'ArrowLeft') {
+          prevCard();
+        }
+      } else {
+        if (e.code === 'ArrowRight') nextQuestion();
+        else if (e.code === 'ArrowLeft') prevQuestion();
+      }
+    });
+
+    // Start aplikacji z wymieszanymi pytaniami
+    initDeck(true);
+  </script>
+</body>
+</html>
