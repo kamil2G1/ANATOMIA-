@@ -50,16 +50,19 @@
           <span class="bg-indigo-500 text-white px-2.5 py-0.5 rounded-lg text-sm font-bold">100 PYTAŃ</span>
           Anatomia Funkcjonalna i Postawa Ciała Kamil
         </h1>
-        <p class="text-xs text-slate-400 mt-0.5">Kompletna baza z prezentacji • Tryb Quizu z tasowaniem oraz Fiszki</p>
+        <p class="text-xs text-slate-400 mt-0.5">Baza 100 pytań • Zapis postępu • Tryb Egzaminu • Fiszki 3D</p>
       </div>
 
       <!-- Przełącznik trybów + przełącznik motywu -->
-      <div class="flex items-center gap-2 self-start sm:self-auto">
+      <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
         <div class="flex bg-slate-800 p-1 rounded-xl">
-          <button id="tab-quiz" onclick="switchMode('quiz')" class="px-4 py-2 rounded-lg text-sm font-semibold transition bg-indigo-600 text-white shadow">
-            📝 Test (100 pytań)
+          <button id="tab-quiz" onclick="switchMode('quiz')" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-indigo-600 text-white shadow">
+            📝 Nauka
           </button>
-          <button id="tab-flashcards" onclick="switchMode('flashcards')" class="px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-300 hover:text-white">
+          <button id="tab-exam" onclick="switchMode('exam')" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-300 hover:text-white">
+            ⏱️ Egzamin (20)
+          </button>
+          <button id="tab-flashcards" onclick="switchMode('flashcards')" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-300 hover:text-white">
             🗂️ Fiszki
           </button>
         </div>
@@ -74,7 +77,7 @@
   </header>
 
   <!-- Pasek filtrów i tasowania -->
-  <div class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
+  <div id="filter-bar" class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
     <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
       <div class="flex flex-wrap items-center gap-2">
         <label for="category-select" class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Dział:</label>
@@ -86,15 +89,32 @@
           <option value="Miednica i kończyna dolna">4. Miednica i kończyna dolna</option>
           <option value="Postawa i wady">5. Postawa ciała, punkty kostne i wady</option>
         </select>
+
+        <!-- Filtr tylko błędnych odpowiedzi w trybie nauki -->
+        <label id="wrong-filter-wrap" class="inline-flex items-center gap-1.5 cursor-pointer text-xs font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 px-3 py-1.5 rounded-lg">
+          <input type="checkbox" id="quiz-only-wrong" onchange="toggleWrongFilter()" class="rounded text-rose-600" />
+          Tylko błędy (<span id="wrong-filter-count">0</span>)
+        </label>
       </div>
 
       <div class="flex items-center gap-2">
-        <button onclick="shuffleDeck()" class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-semibold text-sm px-4 py-1.5 rounded-lg shadow-sm transition cursor-pointer">
-          🔀 Wymieszaj losowo
+        <button onclick="shuffleDeck()" class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-semibold text-sm px-3.5 py-1.5 rounded-lg shadow-sm transition cursor-pointer">
+          🔀 Wymieszaj
         </button>
-        <button onclick="resetProgress()" class="inline-flex items-center gap-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm px-3 py-1.5 rounded-lg transition cursor-pointer" title="Wyzeruj wyniki">
+        <button id="btn-reset" onclick="requestResetProgress()" class="inline-flex items-center gap-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm px-3 py-1.5 rounded-lg transition cursor-pointer" title="Wyzeruj wyniki">
           ↺ Resetuj
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pasek powiadomienia / potwierdzenia resetu -->
+  <div id="toast-banner" class="hidden max-w-5xl w-full mx-auto px-4 pt-4">
+    <div class="bg-amber-50 dark:bg-amber-950/80 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 px-4 py-3 rounded-xl flex flex-wrap items-center justify-between gap-3 text-sm font-medium shadow-sm">
+      <span id="toast-text">Czy na pewno wyzerować wszystkie zapisane postępy (test i fiszki)?</span>
+      <div id="toast-actions" class="flex items-center gap-2">
+        <button onclick="confirmResetProgress()" class="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs">Tak, wyzeruj</button>
+        <button onclick="hideToast()" class="px-3 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold text-xs">Anuluj</button>
       </div>
     </div>
   </div>
@@ -102,9 +122,9 @@
   <!-- Główny kontener -->
   <main class="flex-1 max-w-5xl w-full mx-auto px-4 py-6">
 
-    <!-- ==================== TRYB QUIZU ==================== -->
+    <!-- ==================== TRYB QUIZU / EGZAMINU ==================== -->
     <section id="quiz-view" class="space-y-5">
-      <!-- Pasek postępu i statystyk -->
+      <!-- Pasek postępu, statystyk i zegara egzaminu -->
       <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors">
         <div class="flex-1">
           <div class="flex justify-between text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5">
@@ -116,7 +136,10 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-4 text-sm font-bold shrink-0">
+        <div class="flex flex-wrap items-center gap-2.5 text-sm font-bold shrink-0">
+          <div id="exam-timer-box" class="hidden bg-amber-50 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 px-3 py-1.5 rounded-xl border border-amber-300 dark:border-amber-700">
+            ⏱️ <span id="exam-timer">15:00</span>
+          </div>
           <div class="bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-3 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800">
             ✅ Dobrze: <span id="score-correct">0</span>
           </div>
@@ -126,15 +149,39 @@
         </div>
       </div>
 
+      <!-- Karta wyniku egzaminu (widoczna po zakończeniu egzaminu) -->
+      <div id="exam-summary-card" class="hidden bg-white dark:bg-slate-900 rounded-2xl shadow-lg border-2 border-indigo-500 p-6 sm:p-8 text-center space-y-4">
+        <div id="exam-grade-badge" class="inline-block px-4 py-1.5 rounded-full text-sm font-extrabold uppercase tracking-wider bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
+          Wynik egzaminu
+        </div>
+        <h2 id="exam-score-headline" class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+          Twój wynik: 0 / 20 (0%)
+        </h2>
+        <p id="exam-score-desc" class="text-sm text-slate-600 dark:text-slate-300 max-w-lg mx-auto">
+          Podsumowanie...
+        </p>
+        <div class="flex flex-wrap justify-center gap-3 pt-2">
+          <button onclick="startNewExam()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow transition">
+            🔄 Nowy losowy egzamin (20 pytań)
+          </button>
+          <button onclick="switchMode('quiz')" class="px-5 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold text-sm transition">
+            Wróć do pełnej bazy (100 pytań)
+          </button>
+        </div>
+      </div>
+
       <!-- Karta pytania -->
-      <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-md border border-slate-200 dark:border-slate-800 overflow-hidden transition-colors">
+      <div id="question-card" class="bg-white dark:bg-slate-900 rounded-2xl shadow-md border border-slate-200 dark:border-slate-800 overflow-hidden transition-colors">
         <div class="bg-slate-50 dark:bg-slate-800/70 px-6 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <span id="q-category-badge" class="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300">
             Dział
           </span>
-          <span id="q-number-badge" class="text-xs font-semibold text-slate-500 dark:text-slate-400">
-            ID #1
-          </span>
+          <div class="flex items-center gap-3">
+            <span class="hidden md:inline text-[11px] text-slate-400">Skróty: 1–4 lub A–D, ←/→</span>
+            <span id="q-number-badge" class="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              ID #1
+            </span>
+          </div>
         </div>
 
         <div class="p-6 sm:p-8">
@@ -174,7 +221,7 @@
       <!-- Podgląd siatki pytań (zwijany) -->
       <details class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 transition-colors">
         <summary class="text-sm font-bold text-slate-700 dark:text-slate-200 cursor-pointer select-none">
-          📊 Pokaż mapę wszystkich pytań w bieżącej talii (kliknij numer, aby przejść)
+          📊 Pokaż mapę pytań w bieżącej talii (kliknij numer, aby przejść)
         </summary>
         <div id="question-grid" class="grid grid-cols-10 sm:grid-cols-20 gap-1.5 mt-4">
           <!-- Kafelki numerów -->
@@ -778,237 +825,65 @@
         q: "Na czym polega ruch nutacji kości krzyżowej w stawie krzyżowo-biodrowym?",
         options: ["Podstawa kości krzyżowej pochyla się w przód i w dół, a wierzchołek cofa ku tyłowi", "Podstawa kości krzyżowej unosi się ku górze i tyłowi", "Kość krzyżowa obraca się wokół osi pionowej", "Kości biodrowe zbliżają się do spojenia łonowego"],
         correct: 0,
-        rationale: "Nutacja („kiwnięcie” podstawą kości krzyżowej w przód/dół) towarzyszy przodopochyleniu miednicy i napina więzadła krzyżowo-guzowe i krzyżowo-kolcowe."
-      },
-      {
-        id: 70, cat: "Miednica i kończyna dolna",
-        q: "Które więzadło uznaje się za najsilniejsze więzadło w ludzkim organizmie?",
-        options: ["Więzadło biodrowo-udowe (ligamentum iliofemorale)", "Więzadło krzyżowe przednie (ACL)", "Więzadło obłe głowy kości udowej", "Więzadło żółte"],
-        correct: 0,
-        rationale: "Więzadło biodrowo-udowe (kształtu odwróconej litery Y) wytrzymuje obciążenia powyżej 300 kg; napina się podczas wyprostu uda, oszczędzając energię mięśni w staniu."
-      },
-      {
-        id: 71, cat: "Miednica i kończyna dolna",
-        q: "Jaką funkcję biomechaniczną pełni obrąbek panewkowy w stawie biodrowym?",
-        options: ["Pogłębia panewkę i uszczelnia staw, zwiększając jego stabilność", "Wytwarza maź stawową", "Łączy bezpośrednio krętarz większy z talerzem biodrowym", "Zastępuje więzadło biodrowo-udowe"],
-        correct: 0,
-        rationale: "Chrząstkowłóknisty obrąbek panewkowy obejmuje głowę kości udowej poza jej równik, zwiększając głębokość panewki i utrzymując podciśnienie stabilizujące staw."
-      },
-      {
-        id: 72, cat: "Miednica i kończyna dolna",
-        q: "Ile wynosi prawidłowy kąt szyjkowo-trzonowy (inklinacji) kości udowej u dorosłego człowieka?",
-        options: ["Około 125°–128°", "Około 90°", "Około 165°", "Około 105°"],
-        correct: 0,
-        rationale: "Kąt szyjkowo-trzonowy (~125–128°) oddala trzon kości udowej od miednicy, zapobiegając jej konfliktowi z talerzem biodrowym podczas ruchów."
-      },
-      {
-        id: 73, cat: "Miednica i kończyna dolna",
-        q: "Jaką rolę w biomechanice stawu kolanowego odgrywają łąkotki (przyśrodkowa i boczna)?",
-        options: ["Dopasowują niespójne powierzchnie kłykci, amortyzują wstrząsy i rozkładają obciążenia", "Łączą rzepkę z guzowatością piszczeli", "Ograniczają przeprost stawu łokciowego", "Zastępują więzadła krzyżowe"],
-        correct: 0,
-        rationale: "Wypukłe kłykcie kości udowej spoczywają na niemal płaskim plateau kości piszczelowej – łąkotki tworzą dla nich sprężyste panewki i przejmują ok. 50% obciążeń."
-      },
-      {
-        id: 74, cat: "Miednica i kończyna dolna",
-        q: "Dlaczego łąkotka przyśrodkowa ulega uszkodzeniom znacznie częściej niż łąkotka boczna?",
-        options: ["Jest zrośnięta z torebką stawową i więzadłem pobocznym piszczelowym, co ogranicza jej ruchomość", "Jest zbudowana z kości gąbczastej zamiast chrząstki", "Nie jest pokryta mazią stawową", "Przenosi 100% ciężaru ciała podczas stania"],
-        correct: 0,
-        rationale: "Łąkotka boczna jest bardziej ruchoma i łatwiej ucieka spod kłykcia przy skręcie; przyśrodkowa jest silnie zakotwiczona do MCL i torebki, więc łatwiej ulega zakleszczeniu i rozerwaniu."
-      },
-      {
-        id: 75, cat: "Miednica i kończyna dolna",
-        q: "Jaką podstawową funkcję mechaniczną spełnia więzadło krzyżowe przednie (ACL) w stawie kolanowym?",
-        options: ["Ogranicza nadmierne przesunięcie kości piszczelowej ku przodowi względem kości udowej", "Ogranicza przesunięcie kości piszczelowej ku tyłowi", "Dociska rzepkę do bruzdy międzykłykciowej", "Łączy strzałkę z kością skokową"],
-        correct: 0,
-        rationale: "ACL biegnie od przedniego pola międzykłykciowego piszczeli ku górze, tyłowi i bokowi do kłykcia bocznego kości udowej, hamując tzw. szufladę przednią."
-      },
-      {
-        id: 76, cat: "Miednica i kończyna dolna",
-        q: "Jaką funkcję pełni rzepka (patella) jako największa trzeszczka w organizmie człowieka?",
-        options: ["Zwiększa ramię dźwigni mięśnia czworogłowego uda i chroni staw od przodu", "Łączy kość piszczelową ze strzałkową", "Umożliwia ruchy odwodzenia w stawie kolanowym", "Zastępuje łąkotkę boczną"],
-        correct: 0,
-        rationale: "Rzepka odsuwa ścięgno mięśnia czworogłowego od osi obrotu kolana, zwiększając efektywność (moment siły) wyprostu o ok. 30%."
-      },
-      {
-        id: 77, cat: "Miednica i kończyna dolna",
-        q: "Na czym polega mechanizm „ryglowania” (automatycznej rotacji końcowej) stawu kolanowego w ostatnich 15° wyprostu?",
-        options: ["W zamkniętym łańcuchu kość udowa wykonuje rotację wewnętrzną względem piszczeli, blokując staw", "Rzepka wysuwa się bocznie poza kłykieć", "Więzadła krzyżowe całkowicie się rozluźniają", "Kość strzałkowa obraca się o 45°"],
-        correct: 0,
-        rationale: "Dzięki większej powierzchni kłykcia przyśrodkowego kości udowej w końcowej fazie wyprostu dochodzi do automatycznego zaryglowania stawu, co pozwala stać bez ciągłego napięcia mięśni."
-      },
-      {
-        id: 78, cat: "Miednica i kończyna dolna",
-        q: "Która kość goleni przenosi główny ciężar ciała (ok. 85–90%) i wchodzi w skład stawu kolanowego?",
-        options: ["Kość piszczelowa (tibia)", "Kość strzałkowa (fibula)", "Kość skokowa", "Rzepka"],
-        correct: 0,
-        rationale: "Kość piszczelowa leży przyśrodkowo i przenosi niemal całe obciążenie osiowe; strzałka leży bocznie, nie tworzy stawu kolanowego i służy głównie jako przyczep mięśni oraz boczna stabilizacja kostki."
-      },
-      {
-        id: 79, cat: "Miednica i kończyna dolna",
-        q: "Jakie ruchy zachodzą w stawie skokowym górnym (skokowo-goleniowym)?",
-        options: ["Zgięcie grzbietowe oraz zgięcie podeszwowe stopy", "Wyłącznie inwersja i ewersja", "Rotacja wokół osi długiej podudzia", "Odwodzenie i przywodzenie palców"],
-        correct: 0,
-        rationale: "Staw skokowy górny to staw zawiasowy utworzony przez widełki kostek (piszczeli i strzałki) oraz bloczek kości skokowej – odpowiada za zgięcie grzbietowe i podeszwowe."
-      },
-      {
-        id: 80, cat: "Miednica i kończyna dolna",
-        q: "Dlaczego staw skokowy górny jest najbardziej stabilny w zgięciu grzbietowym stopy?",
-        options: ["Bloczek kości skokowej jest szerszy z przodu niż z tyłu i klinuje się w widełkach kostek", "W zgięciu grzbietowym więzadło ATFL ulega całkowitemu rozluźnieniu", "Kość piętowa blokuje kość piszczelową od przodu", "Ścięgno Achillesa jest wtedy całkowicie luźne"],
-        correct: 0,
-        rationale: "Przednia część bloczka kości skokowej jest szersza, więc przy uniesieniu stopy w górę (zgięcie grzbietowe) wypełnia ciasno widełki kostek; w zgięciu podeszwowym staw ma więcej luzu i łatwiej o skręcenie."
-      },
-      {
-        id: 81, cat: "Miednica i kończyna dolna",
-        q: "W których stawach zachodzą główne ruchy odwracania (inwersji) i nawracania (ewersji) stopy?",
-        options: ["W stawie skokowym dolnym (skokowo-piętowo-łódkowym) i stawie poprzecznym stępu", "Wyłącznie w stawie skokowym górnym", "W stawach międzypaliczkowych", "W więzozroście piszczelowo-strzałkowym bliższym"],
-        correct: 0,
-        rationale: "Inwersja (uniesienie przyśrodkowego brzegu stopy) i ewersja (uniesienie bocznego brzegu) zachodzą poniżej kości skokowej – w stawie podskokowym i skokowo-piętowo-łódkowym."
-      },
-      {
-        id: 82, cat: "Miednica i kończyna dolna",
-        q: "Które więzadło po bocznej stronie stawu skokowego ulega uszkodzeniu najczęściej podczas skręcenia inwersyjnego stopy?",
-        options: ["Więzadło skokowo-strzałkowe przednie (ATFL)", "Więzadło trójgraniaste", "Więzadło krzyżowe tylne", "Więzadło podeszwowe długie"],
-        correct: 0,
-        rationale: "ATFL jest najsłabszym pasmem więzadła pobocznego bocznego i napina się przy zgięciu podeszwowym z inwersją – dlatego ulega naderwaniu w ponad 80% skręceń kostki."
-      },
-      {
-        id: 83, cat: "Miednica i kończyna dolna",
-        q: "Które trzy punkty kostne wyznaczają tzw. trójkąt podparcia stopy odpowiadający za jej statyczną stabilność?",
-        options: ["Guz piętowy, głowa I kości śródstopia oraz głowa V kości śródstopia", "Kostka przyśrodkowa, kostka boczna i kość sześcienna", "Paliczek dalszy palucha, kość łódkowata i pięta", "Kość skokowa, klinowata przyśrodkowa i III kość śródstopia"],
-        correct: 0,
-        rationale: "Między tymi trzema punktami rozpięte są łuki stopy: podłużny przyśrodkowy (dynamiczny), podłużny boczny (podporowy) oraz poprzeczny przedni."
-      },
-      {
-        id: 84, cat: "Miednica i kończyna dolna",
-        q: "Która kość stępu stanowi tzw. zwornik łuku podłużnego przyśrodkowego stopy?",
-        options: ["Kość skokowa (talus)", "Kość piętowa (calcaneus)", "Kość sześcienna (os cuboideum)", "Kość klinowata boczna"],
-        correct: 0,
-        rationale: "Kość skokowa leży na szczycie sklepienia stopy, przyjmuje ciężar z goleni i rozdziela go do tyłu (na kość piętową) oraz do przodu (przez kość łódkowatą na przodostopie)."
-      },
-      {
-        id: 85, cat: "Miednica i kończyna dolna",
-        q: "Jaką rolę pełni rozcięgno podeszwowe w tzw. mechanizmie kołowrotu (windlass mechanism) podczas wyprostu palucha?",
-        options: ["Nawija się na głowę I kości śródstopia, skraca stopę i unosi jej łuk podłużny", "Rozluźnia łuk stopy, powodując płaskostopie", "Zgina podeszwowo wszystkie palce stopy", "Blokuje staw kolanowy w zgięciu"],
-        correct: 0,
-        rationale: "Podczas odbicia stopy wyprost palucha napina rozcięgno podeszwowe niczym linę na kołowrocie, zmieniając stopę ze sprężystego amortyzatora w sztywną dźwignię."
-      },
+    // STAN APLIKACJI I PAMIĘĆ LOCALSTORAGE
+    const STORAGE_KEY_ANSWERS = 'anatomia_kamil_answers_v1';
+    const STORAGE_KEY_KNOWN = 'anatomia_kamil_known_v1';
 
-      // === DZIAŁ 5: POSTAWA CIAŁA, PUNKTY KOSTNE I WADY (86-100) ===
-      {
-        id: 86, cat: "Postawa i wady",
-        q: "Przez jakie anatomiczne punkty kostne przebiega prawidłowa linia pionu (linia grawitacyjna) ciała oglądana z boku (w płaszczyźnie strzałkowej)?",
-        options: ["Przewód słuchowy zewnętrzny, wyrostek barkowy, krętarz większy i tuż przed kostką boczną", "Czubek nosa, rękojeść mostka, rzepka i paluch", "Guzowatość potyliczna, kąt dolny łopatki, guz kulszowy i pięta", "Wyrostek sutkowaty, łokieć, spojenie łonowe i kostka przyśrodkowa"],
-        correct: 0,
-        rationale: "Wzorcowy pion w płaszczyźnie strzałkowej przechodzi przez otwór słuchowy zewnętrzny, trzon kręgów szyjnych/lędźwiowych, wyrostek barkowy, krętarz większy kości udowej, lekko przed osią stawu kolanowego i ok. 2–3 cm przed kostką boczną."
-      },
-      {
-        id: 87, cat: "Postawa i wady",
-        q: "Jakie położenie względem siebie przyjmują kolec biodrowy przedni górny (ASIS) oraz spojenie łonowe w neutralnie ustawionej miednicy?",
-        options: ["Leżą w jednej wspólnej płaszczyźnie czołowej (pionowej)", "ASIS znajduje się 5 cm przed spojeniem łonowym", "Spojenie łonowe wystaje znacznie przed ASIS", "ASIS leży na wysokości pępka"],
-        correct: 0,
-        rationale: "W pozycji neutralnej miednicy oba kolce biodrowe przednie górne i spojenie łonowe wyznaczają pionową płaszczyznę czołową (a kąt przodopochylenia między ASIS a PSIS wynosi ok. 7–12°)."
-      },
-      {
-        id: 88, cat: "Postawa i wady",
-        q: "Na jakiej wysokości kręgosłupa rzutuje się w pozycji stojącej kąt dolny łopatki?",
-        options: ["Na wysokości wyrostka kolczystego VII kręgu piersiowego (Th7)", "Na wysokości kręgu szyjnego C7", "Na wysokości II kręgu lędźwiowego (L2)", "Na wysokości kolców biodrowych tylnych górnych"],
-        correct: 0,
-        rationale: "Grzebień łopatki odpowiada poziomowi Th3, natomiast kąt dolny łopatki rzutuje się na wyrostek kolczysty Th7 (lub 7. międzyżebrze)."
-      },
-      {
-        id: 89, cat: "Postawa i wady",
-        q: "Jaki poziom kręgosłupa wyznacza linia łącząca najwyższe punkty grzebieni biodrowych (linia Tuffiera)?",
-        options: ["Wyrostek kolczysty kręgu L4 lub przestrzeń międzykręgową L4–L5", "Wyrostek kolczysty kręgu Th12", "Kość guziczną", "Wyrostek kolczysty kręgu L1"],
-        correct: 0,
-        rationale: "Najwyższe punkty grzebieni biodrowych znajdują się na wysokości L4/L5, natomiast kolce biodrowe tylne górne (PSIS) wyznaczają poziom S2."
-      },
-      {
-        id: 90, cat: "Postawa i wady",
-        q: "Jaki punkt kostny poniżej kolana służy jako miejsce przyczepu więzadła rzepki?",
-        options: ["Guzowatość kości piszczelowej (tuberositas tibiae)", "Głowa kości strzałkowej", "Kostka przyśrodkowa", "Krętarz mniejszy"],
-        correct: 0,
-        rationale: "Guzowatość kości piszczelowej leży na przedniej powierzchni końca bliższego piszczeli i przyjmuje przyczep więzadła rzepki (będącego przedłużeniem ścięgna m. czworogłowego)."
-      },
-      {
-        id: 91, cat: "Postawa i wady",
-        q: "Co charakteryzuje wadę postawy nazywaną plecami okrągłymi (dorsum rotundum)?",
-        options: ["Nadmiernie pogłębiona kifoza piersiowa, wysunięcie barków i głowy w przód", "Całkowite zniesienie krzywizn kręgosłupa", "Nadmiernie pogłębiona lordoza lędźwiowa przy spłaszczonej kifozie", "Boczne skrzywienie kręgosłupa z garbem żebrowym"],
-        correct: 0,
-        rationale: "Plecy okrągłe to hiperkifoza piersiowa połączona z protrakcją barków (odstawaniem łopatek), spłaszczeniem klatki piersiowej i wysunięciem głowy w przód."
-      },
-      {
-        id: 92, cat: "Postawa i wady",
-        q: "Jaka zmiana w ustawieniu miednicy i kręgosłupa jest typowa dla pleców wklęsłych (dorsum concavum)?",
-        options: ["Zwiększone przodopochylenie miednicy oraz pogłębiona lordoza lędźwiowa", "Tyłopochylenie miednicy i zniesienie lordozy lędźwiowej", "Pogłębienie kifozy krzyżowej przy braku lordozy szyjnej", "Zbliżenie kostek przyśrodkowych i oddalenie kolan"],
-        correct: 0,
-        rationale: "W plecach wklęsłych (hiperlordozie lędźwiowej) miednica pochyla się nadmiernie w przód, brzuch jest uwypuklony, a pośladki silnie uwydatnione."
-      },
-      {
-        id: 93, cat: "Postawa i wady",
-        q: "Jaki mechanizm odpowiada za powstanie tzw. pleców płaskich (dorsum planum)?",
-        options: ["Zniesienie lub znaczne spłaszczenie fizjologicznych krzywizn w płaszczyźnie strzałkowej", "Jednoczesne pogłębienie kifozy piersiowej i lordozy lędźwiowej", "Rotacja kręgów szyjnych w płaszczyźnie poprzecznej", "Przerośnięcie wyrostków kolczystych w odcinku piersiowym"],
-        correct: 0,
-        rationale: "Plecy płaskie wiążą się ze zmniejszonym pochyleniem miednicy i utratą amortyzujących krzywizn (kifozy piersiowej i lordozy lędźwiowej), co zwiększa ryzyko przeciążeń dysków."
-      },
-      {
-        id: 94, cat: "Postawa i wady",
-        q: "Czym charakteryzują się plecy wklęsło-okrągłe?",
-        options: ["Jednoczesnym pogłębieniem lordozy lędźwiowej oraz kifozy piersiowej", "Brakiem lordozy szyjnej przy prawidłowej kifozie piersiowej", "Bocznym skrzywieniem w odcinku piersiowo-lędźwiowym", "Wyłącznie wysunięciem głowy do przodu"],
-        correct: 0,
-        rationale: "W tej wadzie zwiększeniu przodopochylenia miednicy i hiperlordozie lędźwiowej towarzyszy kompensacyjne pogłębienie kifozy piersiowej."
-      },
-      {
-        id: 95, cat: "Postawa i wady",
-        q: "Czym różni się skolioza strukturalna od postawy skoliotycznej (funkcjonalnej)?",
-        options: ["Skolioza strukturalna jest trójpłaszczyznowa i zawiera utrwaloną rotację kręgów oraz garb żebrowy", "Postawa skoliotyczna jest nieodwracalna i wymaga operacji", "Skolioza strukturalna dotyczy wyłącznie kości miednicznej", "Postawa skoliotyczna zawsze powoduje zrost żeber z łopatką"],
-        correct: 0,
-        rationale: "Skolioza to deformacja w 3 płaszczyznach: czołowej (wygięcie boczne), poprzecznej (rotacja kręgów i garb żebrowy) oraz strzałkowej (zaburzenie kifozy/lordozy). Postawa skoliotyczna znika przy skłonie lub leżeniu."
-      },
-      {
-        id: 96, cat: "Postawa i wady",
-        q: "Dlaczego w skoliozie piersiowej powstaje garb żebrowy po stronie wypukłości skrzywienia?",
-        options: ["Trzony kręgów rotują się w stronę wypukłości skrzywienia, wypychając tylne kąty żeber ku tyłowi", "Żebra po stronie wypukłości rosną dwa razy szybciej", "Łopatka przemieszcza się pod obojczyk", "Wyrostki kolczyste obracają się w stronę wypukłości"],
-        correct: 0,
-        rationale: "W skoliozie trzony kręgów obracają się w stronę wypukłą łuku (a wyrostki kolczyste w stronę wklęsłą), ciągnąc za sobą żebra i tworząc garb żebrowy widoczny w teście Adamsa (skłonie w przód)."
-      },
-      {
-        id: 97, cat: "Postawa i wady",
-        q: "Jak ustawione są kończyny dolne w wadzie nazywanej kolanami koślawymi (genu valgum)?",
-        options: ["Kolana zbliżają się do siebie, a kostki przyśrodkowe są oddalone (kształt litery X)", "Kolana są oddalone od siebie, a kostki stykają się (kształt litery O)", "Stawy kolanowe wyginają się nadmiernie ku tyłowi", "Stopy ustawione są wyłącznie na krawędziach bocznych"],
-        correct: 0,
-        rationale: "W kolanie koślawym oś podudzia odchyla się na zewnątrz względem osi uda (nogi w X), co przeciąża przedział boczny kolana i więzadło poboczne przyśrodkowe."
-      },
-      {
-        id: 98, cat: "Postawa i wady",
-        q: "Jak ustawione są kończyny dolne w wadzie nazywanej kolanami szpotawymi (genu varum)?",
-        options: ["Kolana oddalają się na zewnątrz, a kostki przyśrodkowe stykają się (kształt litery O)", "Kolana stykają się ze sobą, a pięty są rozstawione szeroko", "Rzepki skierowane są całkowicie w stronę dołów podkolanowych", "Kość udowa zrośnięta jest z kością piszczelową"],
-        correct: 0,
-        rationale: "W kolanie szpotawym oś podudzia odchyla się do wewnątrz (nogi w O), co zwiększa nacisk na przedział przyśrodkowy stawu kolanowego i łąkotkę przyśrodkową."
-      },
-      {
-        id: 99, cat: "Postawa i wady",
-        q: "Na czym polega płaskostopie podłużne (pes planus)?",
-        options: ["Na obniżeniu lub zaniku łuku podłużnego przyśrodkowego stopy i koślawym ustawieniu pięty", "Na nadmiernym wydrążeniu sklepienia stopy i przykurczu palców", "Na bocznym odchyleniu palucha w stronę palca małego", "Na zrośnięciu kości skokowej z piszczelową"],
-        correct: 0,
-        rationale: "W płaskostopiu podłużnym niewydolność aparatu więzadłowo-mięśniowego prowadzi do obniżenia kości łódkowatej i spłaszczenia przyśrodkowego łuku stopy."
-      },
-      {
-        id: 100, cat: "Postawa i wady",
-        q: "Jakie deformacje składają się na tzw. stopę płasko-koślawą (pes planovalgus)?",
-        options: ["Obniżenie łuku podłużnego stopy oraz odchylenie kości piętowej na zewnątrz (pronacja tyłostopia)", "Uniesienie łuku podłużnego oraz szpotawe ustawienie pięty", "Zgięcie grzbietowe palucha przy braku ruchu w stawie skokowym", "Skrócenie kości piszczelowej względem strzałkowej"],
-        correct: 0,
-        rationale: "W stopie płasko-koślawej ścięgno Achillesa załamuje się ku bokowi (pięta ucieka na zewnątrz), a przyśrodkowy brzeg stopy zapada się do podłoża."
-      }
-    ];
-
-    // STAN APLIKACJI
-    let currentMode = 'quiz';
+    let currentMode = 'quiz'; // 'quiz' | 'exam' | 'flashcards'
     let activeDeck = [];
     let currentIndex = 0;
     let userAnswers = {}; // id -> { selectedIndex, isCorrect, shuffledOptions }
+    let examAnswers = {}; // osobny stan dla szybkiego egzaminu 20 pytań
     let knownCards = new Set(); // zbiór id opanowanych fiszek
     let onlyUnknown = false;
+    let onlyWrong = false;
     let isFlipped = false;
+
+    // Zmienne dla trybu Egzamin (20 pytań, 15 minut)
+    let examTimerInterval = null;
+    let examSecondsLeft = 15 * 60;
+    let examFinished = false;
+
+    // Wczytanie zapisanych postępów z localStorage
+    function loadSavedProgress() {
+      try {
+        const savedAns = localStorage.getItem(STORAGE_KEY_ANSWERS);
+        if (savedAns) {
+          userAnswers = JSON.parse(savedAns) || {};
+        }
+        const savedKnown = localStorage.getItem(STORAGE_KEY_KNOWN);
+        if (savedKnown) {
+          const arr = JSON.parse(savedKnown);
+          if (Array.isArray(arr)) knownCards = new Set(arr);
+        }
+      } catch (e) {
+        console.warn('Nie udało się odczytać postępu z localStorage:', e);
+      }
+    }
+
+    function saveProgress() {
+      try {
+        localStorage.setItem(STORAGE_KEY_ANSWERS, JSON.stringify(userAnswers));
+        localStorage.setItem(STORAGE_KEY_KNOWN, JSON.stringify([...knownCards]));
+      } catch (e) {
+        console.warn('Nie udało się zapisać postępu:', e);
+      }
+    }
+
+    // Powiadomienia / potwierdzenia bez użycia natywnego confirm()
+    function showToast(message, withConfirmButtons = false) {
+      const banner = document.getElementById('toast-banner');
+      document.getElementById('toast-text').textContent = message;
+      document.getElementById('toast-actions').style.display = withConfirmButtons ? 'flex' : 'none';
+      banner.classList.remove('hidden');
+      if (!withConfirmButtons) {
+        setTimeout(() => banner.classList.add('hidden'), 3200);
+      }
+    }
+
+    function hideToast() {
+      document.getElementById('toast-banner').classList.add('hidden');
+    }
 
     // Funkcja tasująca (Fisher-Yates)
     function fisherYatesShuffle(arr) {
@@ -1029,17 +904,47 @@
       return fisherYatesShuffle(mapped);
     }
 
+    function getActiveAnswerMap() {
+      return currentMode === 'exam' ? examAnswers : userAnswers;
+    }
+
+    function updateWrongCountBadge() {
+      const wrongTotal = ALL_QUESTIONS.filter(q => userAnswers[q.id] && userAnswers[q.id].selectedIndex !== null && !userAnswers[q.id].isCorrect).length;
+      document.getElementById('wrong-filter-count').textContent = wrongTotal;
+    }
+
     // Inicjalizacja talii
     function initDeck(shouldShuffle = false) {
+      updateWrongCountBadge();
+      if (currentMode === 'exam') {
+        startNewExam();
+        return;
+      }
+
       const selectedCat = document.getElementById('category-select').value;
       let filtered = selectedCat === 'ALL'
         ? [...ALL_QUESTIONS]
         : ALL_QUESTIONS.filter(item => item.cat === selectedCat);
 
+      if (currentMode === 'quiz' && onlyWrong) {
+        const wrongList = filtered.filter(q => userAnswers[q.id] && userAnswers[q.id].selectedIndex !== null && !userAnswers[q.id].isCorrect);
+        if (wrongList.length > 0) {
+          filtered = wrongList;
+        } else {
+          onlyWrong = false;
+          document.getElementById('quiz-only-wrong').checked = false;
+          showToast('Brak błędnych odpowiedzi do powtórki w tym dziale! Wyświetlam wszystkie pytania.');
+        }
+      }
+
       if (currentMode === 'flashcards' && onlyUnknown) {
         const unknownOnly = filtered.filter(item => !knownCards.has(item.id));
         if (unknownOnly.length > 0) {
           filtered = unknownOnly;
+        } else {
+          onlyUnknown = false;
+          document.getElementById('fc-only-unknown').checked = false;
+          showToast('Brawo! Wszystkie fiszki w tym dziale są oznaczone jako opanowane.');
         }
       }
 
@@ -1047,24 +952,100 @@
       currentIndex = 0;
       isFlipped = false;
 
-      // Jeśli wymieszano, wygeneruj nową kolejność odpowiedzi dla nieodpowiedzianych pytań
+      // Zapewnij strukturę odpowiedzi dla każdego pytania (zachowując zapisane odpowiedzi, chyba że użytkownik kliknął Wymieszaj)
       activeDeck.forEach(q => {
-        if (!userAnswers[q.id] || shouldShuffle) {
-          if (shouldShuffle) delete userAnswers[q.id];
+        if (!userAnswers[q.id] || !Array.isArray(userAnswers[q.id].shuffledOptions)) {
           userAnswers[q.id] = {
             selectedIndex: null,
             isCorrect: null,
             shuffledOptions: prepareShuffledOptions(q)
           };
+        } else if (shouldShuffle && userAnswers[q.id].selectedIndex === null) {
+          userAnswers[q.id].shuffledOptions = prepareShuffledOptions(q);
         }
       });
 
       renderAll();
     }
 
+    // Start nowego egzaminu (20 losowych pytań, 15 minut)
+    function startNewExam() {
+      clearInterval(examTimerInterval);
+      examAnswers = {};
+      examFinished = false;
+      examSecondsLeft = 15 * 60;
+      currentIndex = 0;
+
+      activeDeck = fisherYatesShuffle([...ALL_QUESTIONS]).slice(0, 20);
+      activeDeck.forEach(q => {
+        examAnswers[q.id] = {
+          selectedIndex: null,
+          isCorrect: null,
+          shuffledOptions: prepareShuffledOptions(q)
+        };
+      });
+
+      document.getElementById('exam-summary-card').classList.add('hidden');
+      document.getElementById('question-card').classList.remove('hidden');
+      updateExamTimerUI();
+
+      examTimerInterval = setInterval(() => {
+        if (examFinished) {
+          clearInterval(examTimerInterval);
+          return;
+        }
+        examSecondsLeft--;
+        updateExamTimerUI();
+        if (examSecondsLeft <= 0) {
+          finishExam(true);
+        }
+      }, 1000);
+
+      renderQuiz();
+    }
+
+    function updateExamTimerUI() {
+      const mins = Math.floor(Math.max(0, examSecondsLeft) / 60);
+      const secs = Math.max(0, examSecondsLeft) % 60;
+      document.getElementById('exam-timer').textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function finishExam(byTimeout = false) {
+      examFinished = true;
+      clearInterval(examTimerInterval);
+
+      let correctCount = 0;
+      activeDeck.forEach(q => {
+        if (examAnswers[q.id] && examAnswers[q.id].isCorrect) correctCount++;
+      });
+      const pct = Math.round((correctCount / activeDeck.length) * 100);
+      const passed = pct >= 60;
+
+      const summaryCard = document.getElementById('exam-summary-card');
+      const badge = document.getElementById('exam-grade-badge');
+      badge.textContent = byTimeout ? "⏰ Czas minął – Koniec egzaminu" : (passed ? "🎉 Egzamin zaliczony!" : "📚 Wymaga powtórki");
+      badge.className = `inline-block px-4 py-1.5 rounded-full text-sm font-extrabold uppercase tracking-wider ${
+        passed
+          ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+          : 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300'
+      }`;
+
+      document.getElementById('exam-score-headline').textContent = `Twój wynik: ${correctCount} / ${activeDeck.length} (${pct}%)`;
+      document.getElementById('exam-score-desc').textContent = passed
+        ? "Świetna robota! Opanowałeś materiał powyżej progu zaliczenia (60%). Możesz przejrzeć swoje odpowiedzi poniżej lub wylosować kolejny zestaw."
+        : "Próg zaliczenia to 60% (12/20 pkt). Przejrzyj błędne pytania na mapie poniżej i spróbuj ponownie!";
+
+      summaryCard.classList.remove('hidden');
+      summaryCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
     // Tasowanie na żądanie użytkownika
     function shuffleDeck() {
-      initDeck(true);
+      if (currentMode === 'exam') {
+        startNewExam();
+      } else {
+        initDeck(true);
+      }
     }
 
     // Zmiana filtra działu
@@ -1072,48 +1053,89 @@
       initDeck(false);
     }
 
-    // Reset postępów
-    function resetProgress() {
-      userAnswers = {};
-      knownCards.clear();
-      onlyUnknown = false;
-      document.getElementById('fc-only-unknown').checked = false;
+    function toggleWrongFilter() {
+      onlyWrong = document.getElementById('quiz-only-wrong').checked;
       initDeck(false);
     }
 
-    // Przełączanie trybu Quiz / Fiszki
+    // Reset postępów z potwierdzeniem w pasku UI
+    function requestResetProgress() {
+      showToast('Czy na pewno wyzerować wszystkie zapisane odpowiedzi i opanowane fiszki?', true);
+    }
+
+    function confirmResetProgress() {
+      hideToast();
+      userAnswers = {};
+      examAnswers = {};
+      knownCards.clear();
+      onlyUnknown = false;
+      onlyWrong = false;
+      document.getElementById('fc-only-unknown').checked = false;
+      document.getElementById('quiz-only-wrong').checked = false;
+      localStorage.removeItem(STORAGE_KEY_ANSWERS);
+      localStorage.removeItem(STORAGE_KEY_KNOWN);
+      initDeck(false);
+      showToast('Postępy zostały wyzerowane.');
+    }
+
+    // Przełączanie trybu Nauka / Egzamin / Fiszki
     function switchMode(mode) {
       currentMode = mode;
+      clearInterval(examTimerInterval);
+
       const tabQuiz = document.getElementById('tab-quiz');
+      const tabExam = document.getElementById('tab-exam');
       const tabFc = document.getElementById('tab-flashcards');
       const quizView = document.getElementById('quiz-view');
       const fcView = document.getElementById('flashcards-view');
+      const filterBar = document.getElementById('filter-bar');
+      const wrongFilterWrap = document.getElementById('wrong-filter-wrap');
+      const examTimerBox = document.getElementById('exam-timer-box');
+      const examSummaryCard = document.getElementById('exam-summary-card');
 
-      if (mode === 'quiz') {
-        tabQuiz.className = "px-4 py-2 rounded-lg text-sm font-semibold transition bg-indigo-600 text-white shadow";
-        tabFc.className = "px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-300 hover:text-white";
-        quizView.classList.remove('hidden');
-        fcView.classList.add('hidden');
-      } else {
-        tabFc.className = "px-4 py-2 rounded-lg text-sm font-semibold transition bg-indigo-600 text-white shadow";
-        tabQuiz.className = "px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-300 hover:text-white";
+      const activeBtnClass = "px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-indigo-600 text-white shadow";
+      const inactiveBtnClass = "px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-300 hover:text-white";
+
+      tabQuiz.className = mode === 'quiz' ? activeBtnClass : inactiveBtnClass;
+      tabExam.className = mode === 'exam' ? activeBtnClass : inactiveBtnClass;
+      tabFc.className = mode === 'flashcards' ? activeBtnClass : inactiveBtnClass;
+
+      examSummaryCard.classList.add('hidden');
+
+      if (mode === 'flashcards') {
         fcView.classList.remove('hidden');
         quizView.classList.add('hidden');
+        filterBar.classList.remove('hidden');
+        wrongFilterWrap.classList.add('hidden');
+        examTimerBox.classList.add('hidden');
+      } else if (mode === 'exam') {
+        quizView.classList.remove('hidden');
+        fcView.classList.add('hidden');
+        filterBar.classList.add('hidden');
+        examTimerBox.classList.remove('hidden');
+      } else {
+        quizView.classList.remove('hidden');
+        fcView.classList.add('hidden');
+        filterBar.classList.remove('hidden');
+        wrongFilterWrap.classList.remove('hidden');
+        examTimerBox.classList.add('hidden');
       }
+
       initDeck(false);
     }
 
-    // Renderowanie widoku Quizu
+    // Renderowanie widoku Quizu / Egzaminu
     function renderQuiz() {
       if (activeDeck.length === 0) return;
+      const ansMap = getActiveAnswerMap();
       const q = activeDeck[currentIndex];
-      const state = userAnswers[q.id];
+      const state = ansMap[q.id];
 
       // Statystyki ogólne w bieżącej talii
       let correctCount = 0;
       let wrongCount = 0;
       activeDeck.forEach(item => {
-        const st = userAnswers[item.id];
+        const st = ansMap[item.id];
         if (st && st.selectedIndex !== null) {
           if (st.isCorrect) correctCount++;
           else wrongCount++;
@@ -1192,22 +1214,46 @@
       }
 
       document.getElementById('btn-prev').disabled = currentIndex === 0;
-      document.getElementById('btn-next').textContent = currentIndex === activeDeck.length - 1 ? "Zakończ / Od początku ↺" : "Następne →";
+      if (currentMode === 'exam') {
+        document.getElementById('btn-next').textContent = currentIndex === activeDeck.length - 1 ? "Zakończ egzamin ✓" : "Następne →";
+      } else {
+        document.getElementById('btn-next').textContent = currentIndex === activeDeck.length - 1 ? "Od początku ↺" : "Następne →";
+      }
 
       renderQuestionGrid();
     }
 
     function selectAnswer(optionIdx) {
+      const ansMap = getActiveAnswerMap();
       const q = activeDeck[currentIndex];
-      const state = userAnswers[q.id];
-      if (state.selectedIndex !== null) return;
+      const state = ansMap[q.id];
+      if (!state || state.selectedIndex !== null) return;
 
       state.selectedIndex = optionIdx;
       state.isCorrect = state.shuffledOptions[optionIdx].isCorrect;
+
+      // Zapisz także do ogólnej pamięci postępu
+      if (currentMode === 'exam') {
+        userAnswers[q.id] = { ...state };
+      }
+      saveProgress();
+      updateWrongCountBadge();
       renderQuiz();
+
+      // Jeśli to egzamin i odpowiedziano na wszystkie 20 pytań, pokaż wynik
+      if (currentMode === 'exam' && !examFinished) {
+        const allDone = activeDeck.every(item => examAnswers[item.id] && examAnswers[item.id].selectedIndex !== null);
+        if (allDone) {
+          finishExam(false);
+        }
+      }
     }
 
     function nextQuestion() {
+      if (currentMode === 'exam' && currentIndex === activeDeck.length - 1) {
+        finishExam(false);
+        return;
+      }
       if (currentIndex < activeDeck.length - 1) {
         currentIndex++;
       } else {
@@ -1233,9 +1279,10 @@
 
     function renderQuestionGrid() {
       const grid = document.getElementById('question-grid');
+      const ansMap = getActiveAnswerMap();
       grid.innerHTML = '';
       activeDeck.forEach((item, idx) => {
-        const st = userAnswers[item.id];
+        const st = ansMap[item.id];
         const cell = document.createElement('button');
         let bg = "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700";
         if (st && st.selectedIndex !== null) {
@@ -1308,6 +1355,7 @@
       } else {
         knownCards.delete(item.id);
       }
+      saveProgress();
       isFlipped = false;
       if (onlyUnknown && isKnown && activeDeck.length > 1) {
         activeDeck.splice(currentIndex, 1);
@@ -1324,11 +1372,29 @@
     }
 
     function renderAll() {
-      if (currentMode === 'quiz') renderQuiz();
-      else renderFlashcard();
+      if (currentMode === 'flashcards') renderFlashcard();
+      else renderQuiz();
     }
 
-    // Skróty klawiaturowe (Spacja obraca fiszkę, strzałki zmieniają kartę)
+    // Obsługa gestów przesuwania (swipe) na telefonie
+    let touchStartX = 0;
+    document.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+      const diff = e.changedTouches[0].screenX - touchStartX;
+      if (Math.abs(diff) < 55) return;
+      if (currentMode === 'flashcards') {
+        if (diff < 0) nextCard();
+        else prevCard();
+      } else {
+        if (diff < 0) nextQuestion();
+        else prevQuestion();
+      }
+    }, { passive: true });
+
+    // Skróty klawiaturowe (Spacja obraca fiszkę, 1-4 / A-D wybiera odpowiedź, strzałki zmieniają kartę)
     document.addEventListener('keydown', (e) => {
       if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return;
       if (currentMode === 'flashcards') {
@@ -1343,11 +1409,16 @@
       } else {
         if (e.code === 'ArrowRight') nextQuestion();
         else if (e.code === 'ArrowLeft') prevQuestion();
+        else if (['Digit1', 'KeyA'].includes(e.code)) selectAnswer(0);
+        else if (['Digit2', 'KeyB'].includes(e.code)) selectAnswer(1);
+        else if (['Digit3', 'KeyC'].includes(e.code)) selectAnswer(2);
+        else if (['Digit4', 'KeyD'].includes(e.code)) selectAnswer(3);
       }
     });
 
-    // Start aplikacji z wymieszanymi pytaniami
-    initDeck(true);
+    // Wczytanie zapisanych postępów i start aplikacji
+    loadSavedProgress();
+    initDeck(false);
   </script>
 </body>
 </html>
