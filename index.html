@@ -3,14 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Anatomia Funkcjonalna Kamil – 100 Pytań i Fiszki </title>
+  <title>Anatomia Funkcjonalna – 100 Pytań i Fiszki</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Konfiguracja Tailwind dla trybu ciemnego opartego na klasie .dark
+    tailwind.config = {
+      darkMode: 'class'
+    };
+  </script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     body {
       font-family: 'Inter', sans-serif;
-      background-color: #f1f5f9;
-      color: #0f172a;
     }
     .perspective {
       perspective: 1200px;
@@ -27,11 +31,19 @@
       transform: rotateY(180deg);
     }
   </style>
+  <script>
+    // Natychmiastowe ustawienie motywu przed wyrenderowaniem strony (brak mignięcia)
+    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  </script>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200">
 
   <!-- Górny pasek nawigacji -->
-  <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-30">
+  <header class="bg-slate-900 dark:bg-slate-900/95 text-white shadow-lg sticky top-0 z-30 border-b border-slate-800">
     <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <div>
         <h1 class="text-xl font-extrabold tracking-tight flex items-center gap-2">
@@ -41,24 +53,32 @@
         <p class="text-xs text-slate-400 mt-0.5">Kompletna baza z prezentacji • Tryb Quizu z tasowaniem oraz Fiszki</p>
       </div>
 
-      <!-- Przełącznik trybów -->
-      <div class="flex bg-slate-800 p-1 rounded-xl self-start sm:self-auto">
-        <button id="tab-quiz" onclick="switchMode('quiz')" class="px-4 py-2 rounded-lg text-sm font-semibold transition bg-indigo-600 text-white shadow">
-          📝 Test (100 pytań)
-        </button>
-        <button id="tab-flashcards" onclick="switchMode('flashcards')" class="px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-300 hover:text-white">
-          🗂️ Fiszki
+      <!-- Przełącznik trybów + przełącznik motywu -->
+      <div class="flex items-center gap-2 self-start sm:self-auto">
+        <div class="flex bg-slate-800 p-1 rounded-xl">
+          <button id="tab-quiz" onclick="switchMode('quiz')" class="px-4 py-2 rounded-lg text-sm font-semibold transition bg-indigo-600 text-white shadow">
+            📝 Test (100 pytań)
+          </button>
+          <button id="tab-flashcards" onclick="switchMode('flashcards')" class="px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-300 hover:text-white">
+            🗂️ Fiszki
+          </button>
+        </div>
+
+        <!-- Przycisk zmiany motywu Jasny / Ciemny -->
+        <button id="theme-toggle" onclick="toggleTheme()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 dark:text-indigo-300 border border-slate-700 transition cursor-pointer" title="Przełącz motyw jasny / ciemny" aria-label="Przełącz motyw">
+          <span id="theme-icon-sun" class="hidden dark:inline text-base">☀️</span>
+          <span id="theme-icon-moon" class="inline dark:hidden text-base">🌙</span>
         </button>
       </div>
     </div>
   </header>
 
   <!-- Pasek filtrów i tasowania -->
-  <div class="bg-white border-b border-slate-200 shadow-sm">
+  <div class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
     <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
       <div class="flex flex-wrap items-center gap-2">
-        <label for="category-select" class="text-xs font-bold uppercase tracking-wider text-slate-500">Dział:</label>
-        <select id="category-select" onchange="applyFilter()" class="bg-slate-100 border border-slate-300 text-slate-800 text-sm rounded-lg px-3 py-1.5 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <label for="category-select" class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Dział:</label>
+        <select id="category-select" onchange="applyFilter()" class="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-sm rounded-lg px-3 py-1.5 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
           <option value="ALL">Wszystkie działy (100 pytań)</option>
           <option value="Szkielet osiowy">1. Szkielet osiowy (Kręgosłup, Klatka, Czaszka)</option>
           <option value="Stawy i ruch">2. Stawy, połączenia kości, osie i płaszczyzny</option>
@@ -72,7 +92,7 @@
         <button onclick="shuffleDeck()" class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-semibold text-sm px-4 py-1.5 rounded-lg shadow-sm transition cursor-pointer">
           🔀 Wymieszaj losowo
         </button>
-        <button onclick="resetProgress()" class="inline-flex items-center gap-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold text-sm px-3 py-1.5 rounded-lg transition cursor-pointer" title="Wyzeruj wyniki">
+        <button onclick="resetProgress()" class="inline-flex items-center gap-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm px-3 py-1.5 rounded-lg transition cursor-pointer" title="Wyzeruj wyniki">
           ↺ Resetuj
         </button>
       </div>
@@ -85,40 +105,40 @@
     <!-- ==================== TRYB QUIZU ==================== -->
     <section id="quiz-view" class="space-y-5">
       <!-- Pasek postępu i statystyk -->
-      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors">
         <div class="flex-1">
-          <div class="flex justify-between text-xs font-bold text-slate-600 mb-1.5">
+          <div class="flex justify-between text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5">
             <span id="quiz-progress-label">Pytanie 1 z 100</span>
             <span id="quiz-percent-label">Postęp: 0%</span>
           </div>
-          <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
-            <div id="quiz-progress-bar" class="bg-indigo-600 h-full transition-all duration-300" style="width: 1%"></div>
+          <div class="w-full bg-slate-200 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+            <div id="quiz-progress-bar" class="bg-indigo-600 dark:bg-indigo-500 h-full transition-all duration-300" style="width: 1%"></div>
           </div>
         </div>
 
         <div class="flex items-center gap-4 text-sm font-bold shrink-0">
-          <div class="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-xl border border-emerald-200">
+          <div class="bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-3 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800">
             ✅ Dobrze: <span id="score-correct">0</span>
           </div>
-          <div class="bg-rose-50 text-rose-700 px-3 py-1.5 rounded-xl border border-rose-200">
+          <div class="bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-800">
             ❌ Błędy: <span id="score-wrong">0</span>
           </div>
         </div>
       </div>
 
       <!-- Karta pytania -->
-      <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
-        <div class="bg-slate-50 px-6 py-3 border-b border-slate-200 flex items-center justify-between">
-          <span id="q-category-badge" class="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-indigo-100 text-indigo-800">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-md border border-slate-200 dark:border-slate-800 overflow-hidden transition-colors">
+        <div class="bg-slate-50 dark:bg-slate-800/70 px-6 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <span id="q-category-badge" class="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300">
             Dział
           </span>
-          <span id="q-number-badge" class="text-xs font-semibold text-slate-500">
+          <span id="q-number-badge" class="text-xs font-semibold text-slate-500 dark:text-slate-400">
             ID #1
           </span>
         </div>
 
         <div class="p-6 sm:p-8">
-          <h2 id="q-text" class="text-lg sm:text-xl font-bold text-slate-900 leading-snug mb-6">
+          <h2 id="q-text" class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white leading-snug mb-6">
             Treść pytania...
           </h2>
 
@@ -135,14 +155,14 @@
         </div>
 
         <!-- Nawigacja dolna pytania -->
-        <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
-          <button id="btn-prev" onclick="prevQuestion()" class="px-4 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 font-semibold text-sm hover:bg-slate-100 disabled:opacity-40 transition">
+        <div class="bg-slate-50 dark:bg-slate-800/70 px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+          <button id="btn-prev" onclick="prevQuestion()" class="px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 transition">
             ← Poprzednie
           </button>
 
           <div class="flex items-center gap-2">
-            <span class="text-xs text-slate-500 hidden sm:inline">Skocz do nr:</span>
-            <input id="jump-input" type="number" min="1" max="100" placeholder="Nr" class="w-16 px-2.5 py-1.5 text-sm border border-slate-300 rounded-lg text-center font-semibold" onchange="jumpToQuestion(this.value)" />
+            <span class="text-xs text-slate-500 dark:text-slate-400 hidden sm:inline">Skocz do nr:</span>
+            <input id="jump-input" type="number" min="1" max="100" placeholder="Nr" class="w-16 px-2.5 py-1.5 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-center font-semibold" onchange="jumpToQuestion(this.value)" />
           </div>
 
           <button id="btn-next" onclick="nextQuestion()" class="px-5 py-2 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 shadow-sm transition">
@@ -152,8 +172,8 @@
       </div>
 
       <!-- Podgląd siatki pytań (zwijany) -->
-      <details class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
-        <summary class="text-sm font-bold text-slate-700 cursor-pointer select-none">
+      <details class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 transition-colors">
+        <summary class="text-sm font-bold text-slate-700 dark:text-slate-200 cursor-pointer select-none">
           📊 Pokaż mapę wszystkich pytań w bieżącej talii (kliknij numer, aby przejść)
         </summary>
         <div id="question-grid" class="grid grid-cols-10 sm:grid-cols-20 gap-1.5 mt-4">
@@ -164,16 +184,16 @@
 
     <!-- ==================== TRYB FISZEK ==================== -->
     <section id="flashcards-view" class="hidden space-y-6">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
         <div>
-          <span id="fc-counter" class="text-sm font-extrabold text-indigo-600">Fiszka 1 z 100</span>
-          <p class="text-xs text-slate-500">Kliknij kartę (lub naciśnij Spację), aby obrócić fiszkę</p>
+          <span id="fc-counter" class="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">Fiszka 1 z 100</span>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Kliknij kartę (lub naciśnij Spację), aby obrócić fiszkę</p>
         </div>
         <div class="flex items-center gap-3 text-xs font-bold">
-          <span class="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg border border-emerald-200">
+          <span class="bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800">
             Opanowane: <span id="fc-known-count">0</span>
           </span>
-          <label class="inline-flex items-center gap-1.5 cursor-pointer text-slate-700 bg-slate-100 px-3 py-1.5 rounded-lg">
+          <label class="inline-flex items-center gap-1.5 cursor-pointer text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg">
             <input type="checkbox" id="fc-only-unknown" onchange="toggleUnknownFilter()" class="rounded text-indigo-600" />
             Tylko nieopanowane
           </label>
@@ -185,9 +205,9 @@
         <div id="flashcard-inner" onclick="flipCard()" class="preserve-3d relative w-full min-h-[320px] sm:min-h-[360px] cursor-pointer">
           
           <!-- Przód fiszki -->
-          <div class="backface-hidden absolute inset-0 bg-white rounded-3xl shadow-lg border-2 border-slate-200 p-6 sm:p-10 flex flex-col justify-between">
+          <div class="backface-hidden absolute inset-0 bg-white dark:bg-slate-900 rounded-3xl shadow-lg border-2 border-slate-200 dark:border-slate-800 p-6 sm:p-10 flex flex-col justify-between transition-colors">
             <div class="flex items-center justify-between">
-              <span id="fc-front-cat" class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-indigo-100 text-indigo-800">
+              <span id="fc-front-cat" class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300">
                 Dział
               </span>
               <span id="fc-status-badge" class="text-xs font-semibold text-slate-400">
@@ -196,18 +216,18 @@
             </div>
 
             <div class="my-auto py-6 text-center">
-              <p id="fc-front-text" class="text-xl sm:text-2xl font-bold text-slate-900 leading-snug">
+              <p id="fc-front-text" class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white leading-snug">
                 Treść fiszki...
               </p>
             </div>
 
-            <div class="text-center text-xs font-semibold text-indigo-500">
+            <div class="text-center text-xs font-semibold text-indigo-500 dark:text-indigo-400">
               👆 Kliknij, aby zobaczyć odpowiedź
             </div>
           </div>
 
           <!-- Tył fiszki -->
-          <div class="backface-hidden rotate-y-180 absolute inset-0 bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-3xl shadow-xl p-6 sm:p-10 flex flex-col justify-between">
+          <div class="backface-hidden rotate-y-180 absolute inset-0 bg-gradient-to-br from-indigo-900 to-slate-900 dark:from-indigo-950 dark:to-slate-900 text-white rounded-3xl shadow-xl border-2 border-indigo-800/50 p-6 sm:p-10 flex flex-col justify-between">
             <div class="flex items-center justify-between">
               <span class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-indigo-500/30 text-indigo-200">
                 Odpowiedź
@@ -234,12 +254,12 @@
 
       <!-- Przyciski sterowania fiszką -->
       <div class="max-w-2xl mx-auto flex flex-wrap items-center justify-between gap-3">
-        <button onclick="prevCard()" class="px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-700 font-semibold text-sm hover:bg-slate-100 transition">
+        <button onclick="prevCard()" class="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition">
           ← Poprzednia
         </button>
 
         <div class="flex items-center gap-2">
-          <button onclick="markCardKnown(false)" class="px-4 py-2.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold text-sm transition">
+          <button onclick="markCardKnown(false)" class="px-4 py-2.5 rounded-xl bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/70 dark:hover:bg-rose-900/80 text-rose-800 dark:text-rose-300 border border-transparent dark:border-rose-800 font-bold text-sm transition">
             🔄 Do powtórki
           </button>
           <button onclick="markCardKnown(true)" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow transition">
@@ -256,6 +276,18 @@
   </main>
 
   <script>
+    // Przełączanie motywu jasny/ciemny z zapisem w localStorage
+    function toggleTheme() {
+      const htmlEl = document.documentElement;
+      if (htmlEl.classList.contains('dark')) {
+        htmlEl.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      } else {
+        htmlEl.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      }
+    }
+
     // BAZA 100 PYTAŃ Z ANATOMII FUNKCJONALNEJ I POSTAWY CIAŁA
     const ALL_QUESTIONS = [
       // === DZIAŁ 1: SZKIELET OSIOWY (1-25) ===
@@ -1113,14 +1145,14 @@
 
         let classes = "w-full text-left p-4 rounded-xl border-2 font-medium text-sm sm:text-base transition flex items-start gap-3 ";
         if (!isAnswered) {
-          classes += "bg-white border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/40 text-slate-800 cursor-pointer";
+          classes += "bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-950/40 text-slate-800 dark:text-slate-100 cursor-pointer";
         } else {
           if (opt.isCorrect) {
-            classes += "bg-emerald-50 border-emerald-500 text-emerald-950 font-semibold";
+            classes += "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500 text-emerald-950 dark:text-emerald-200 font-semibold";
           } else if (idx === state.selectedIndex) {
-            classes += "bg-rose-50 border-rose-500 text-rose-950";
+            classes += "bg-rose-50 dark:bg-rose-950/60 border-rose-500 text-rose-950 dark:text-rose-200";
           } else {
-            classes += "bg-slate-50 border-slate-200 text-slate-400 opacity-75";
+            classes += "bg-slate-50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 opacity-75";
           }
         }
 
@@ -1131,12 +1163,12 @@
         btn.innerHTML = `
           <span class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-extrabold shrink-0 ${
             !isAnswered
-              ? 'bg-slate-100 text-slate-700'
+              ? 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
               : opt.isCorrect
                 ? 'bg-emerald-600 text-white'
                 : idx === state.selectedIndex
                   ? 'bg-rose-600 text-white'
-                  : 'bg-slate-200 text-slate-500'
+                  : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-500'
           }">${letters[idx]}</span>
           <span class="pt-0.5">${opt.text}</span>
         `;
@@ -1148,10 +1180,10 @@
       if (state.selectedIndex !== null) {
         ratBox.classList.remove('hidden');
         if (state.isCorrect) {
-          ratBox.className = "mt-6 p-4 rounded-xl border border-emerald-200 bg-emerald-50/80 text-emerald-900 text-sm leading-relaxed";
+          ratBox.className = "mt-6 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/80 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-200 text-sm leading-relaxed";
           document.getElementById('q-rationale-title').textContent = "✅ Świetnie! Poprawna odpowiedź.";
         } else {
-          ratBox.className = "mt-6 p-4 rounded-xl border border-rose-200 bg-rose-50/80 text-rose-900 text-sm leading-relaxed";
+          ratBox.className = "mt-6 p-4 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50/80 dark:bg-rose-950/50 text-rose-900 dark:text-rose-200 text-sm leading-relaxed";
           document.getElementById('q-rationale-title').textContent = "❌ Błędna odpowiedź. Sprawdź wyjaśnienie:";
         }
         document.getElementById('q-rationale-text').textContent = q.rationale;
@@ -1205,12 +1237,12 @@
       activeDeck.forEach((item, idx) => {
         const st = userAnswers[item.id];
         const cell = document.createElement('button');
-        let bg = "bg-slate-100 text-slate-600 hover:bg-slate-200";
+        let bg = "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700";
         if (st && st.selectedIndex !== null) {
           bg = st.isCorrect ? "bg-emerald-500 text-white" : "bg-rose-500 text-white";
         }
         if (idx === currentIndex) {
-          bg += " ring-2 ring-indigo-600 ring-offset-1 font-extrabold";
+          bg += " ring-2 ring-indigo-600 dark:ring-indigo-400 ring-offset-1 dark:ring-offset-slate-900 font-extrabold";
         }
         cell.className = `h-7 rounded text-xs font-semibold transition ${bg}`;
         cell.textContent = idx + 1;
@@ -1245,10 +1277,10 @@
       const badge = document.getElementById('fc-status-badge');
       if (knownCards.has(item.id)) {
         badge.textContent = "✅ Opanowane";
-        badge.className = "text-xs font-bold text-emerald-600";
+        badge.className = "text-xs font-bold text-emerald-600 dark:text-emerald-400";
       } else {
         badge.textContent = "⏳ Do nauki";
-        badge.className = "text-xs font-semibold text-amber-600";
+        badge.className = "text-xs font-semibold text-amber-600 dark:text-amber-400";
       }
     }
 
@@ -1318,6 +1350,4 @@
     initDeck(true);
   </script>
 </body>
-
 </html>
-
